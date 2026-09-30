@@ -1,6 +1,6 @@
 # Prototype gris — film interactif
 
-Prototype de rythme de l'accueil, fidèle au [storyboard v0.2](../STORYBOARD.md). Les 10 scènes existent avec leur vraie longueur de scroll (2 000 vh), leur caméra et leurs interactions. **0 → 43 %** : les vraies vidéos Flow V01 → V10, lues au rythme du scroll (`media/`). Le reste utilise encore des formes simples à la place des vrais assets.
+Prototype de rythme de l'accueil, fidèle au [storyboard v0.2](../STORYBOARD.md). Les 10 scènes existent avec leur vraie longueur de scroll (2 000 vh), leur caméra et leurs interactions. **0 → 56 %** : les vraies vidéos Flow V01 → V13, lues au rythme du scroll (`media/`). Le reste utilise encore des formes simples à la place des vrais assets.
 
 **But : valider le rythme et l'enchaînement avant de payer un tournage ou de la 3D finale.**
 

@@ -5,8 +5,8 @@
 // reculer ou recharger au milieu : l'image est toujours la bonne.
 // Seules exceptions : l'ondulation au repos, la souris, et le mode interactif de la scène 07.
 //
-// 0 → 43 % : vidéos Flow V01 → V10 lues au rythme du scroll, voir FILM plus bas.
-// Ensuite : 3D (Arcade qui naît, la galerie, le configurateur).
+// 0 → 56 % : vidéos Flow V01 → V13 lues au rythme du scroll, voir FILM plus bas.
+// Ensuite : 3D (la galerie, Arcade qui se casse, le configurateur).
 
 import * as THREE from './vendor/three.module.min.js';
 import Lenis from './vendor/lenis.mjs';
@@ -95,67 +95,8 @@ addEventListener('pointermove', (e) => {
   mouse.px = e.clientX; mouse.py = e.clientY; mouse.has = true;
 });
 
-// =====================================================================
-// 04 — LE GESTE : la toile, le pistolet, les lignes
-// =====================================================================
-const C = V(0, 0, -300);
-const atelier = new THREE.Group();
-atelier.position.copy(C);
-scene.add(atelier);
-const canvasW = 9, canvasH = 6.2;
-const toile = new THREE.Mesh(new THREE.PlaneGeometry(canvasW, canvasH), new THREE.MeshStandardMaterial({ color: '#F8F5EF', roughness: 1, transparent: true }));
-atelier.add(toile);
-const frameMat = new THREE.MeshStandardMaterial({ color: '#B9A488', roughness: 0.8, transparent: true });
-for (const [w, h, x, y] of [[canvasW + 0.5, 0.25, 0, canvasH / 2 + 0.12], [canvasW + 0.5, 0.25, 0, -canvasH / 2 - 0.12], [0.25, canvasH, canvasW / 2 + 0.12, 0], [0.25, canvasH, -canvasW / 2 - 0.12, 0]]) {
-  const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.3), frameMat);
-  b.position.set(x, y, -0.1);
-  atelier.add(b);
-}
-// Lignes de laine tuftées.
-const ROWS = 16, rowX0 = 3.9, rowW = 7.8, rowY0 = 2.45, rowStep = 0.32;
-const rowGeo = new THREE.BoxGeometry(1, 0.24, 0.1);
-const rows = [];
-for (let k = 0; k < ROWS; k++) {
-  const m = new THREE.Mesh(rowGeo, woolMat(['#DCD2C1', '#D3C7B3', '#E2D9CA'][k % 3], 2));
-  m.material.transparent = true;
-  m.position.set(0, rowY0 - k * rowStep, 0.06);
-  atelier.add(m);
-  rows.push(m);
-}
-// Fenêtres de tracé de chaque ligne (progression locale de la scène 04) : 3 lignes lentes, puis accélération.
-const rowWin = [[0.35, 0.45], [0.5, 0.56], [0.57, 0.63]];
-{
-  // Lignes 3 → 15 : de plus en plus rapides, toutes terminées avant la fin de la scène.
-  const n = ROWS - 3, u = (j) => 1 - Math.pow(1 - j / n, 1.7);
-  for (let j = 0; j < n; j++) rowWin.push([0.635 + 0.355 * u(j), 0.635 + 0.355 * u(j + 1) - 0.003]);
-}
-// Le tufting gun (remplacé plus tard par un modèle glTF).
-const gun = new THREE.Group();
-{
-  const dark = new THREE.MeshStandardMaterial({ color: '#2A2826', roughness: 0.45, metalness: 0.3 });
-  const accent = new THREE.MeshStandardMaterial({ color: WOOL.orange, roughness: 0.5 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 1.5), dark); body.position.z = 0.95;
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.95, 0.3), dark); handle.position.set(0, -0.62, 1.35); handle.rotation.x = -0.35;
-  const top = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.6), accent); top.position.set(0, 0.38, 1.2);
-  const needle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8), new THREE.MeshStandardMaterial({ color: '#bbb', metalness: 0.9, roughness: 0.2 }));
-  needle.rotation.x = Math.PI / 2; needle.position.z = 0.1;
-  const spoolFeed = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(0, 0.4, 1.5), V(0, 1.4, 2.2), V(0.4, 3, 2.6)]), 20, 0.025, 6), woolMat(WOOL.ecru, 1));
-  gun.add(body, handle, top, needle, spoolFeed);
-}
-atelier.add(gun);
-// Fibres qui suivent la souris.
-const followers = [];
-const followerGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.28, 5);
-for (let i = 0; i < 46; i++) {
-  const m = new THREE.Mesh(followerGeo, new THREE.MeshStandardMaterial({ color: i % 3 ? '#D9CDB8' : PALETTE5[i % 5], transparent: true }));
-  m.userData = { k: rr(1.2, 5), off: V(rr(-0.7, 0.7), rr(-0.5, 0.5), rr(0.3, 1.2)), spin: rr(-2, 2) };
-  m.position.set(0, 0, 1);
-  followers.push(m);
-  atelier.add(m);
-}
-const followPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -(C.z + 1));
+const C = V(0, 0, -300); // centre de l'œuvre dans l'espace 3D
 const raycaster = new THREE.Raycaster();
-const followTarget = V(0, 0, 1);
 
 // =====================================================================
 // 05 → 07 — ARCADE (zones géométriques = mêmes fichiers que le configurateur)
@@ -367,7 +308,7 @@ $('#studio-art').innerHTML = `
 const SHOTS = ['La main de Marina.', 'Le tufting gun pique la toile.', 'La laine, les bobines.', 'La colle étalée au dos.', 'La découpe.', 'Le rasage.', 'Les fibres qui volent.', 'Le tapis terminé, retourné.'];
 
 // =====================================================================
-// FILM — vidéos Flow pilotées par le scroll (0 → 43 %)
+// FILM — vidéos Flow pilotées par le scroll (0 → 56 %)
 // =====================================================================
 // Chaque plan occupe une plage du scroll ; sa position dans la plage donne son temps.
 // Deux encodages par plan, avec des images clés très rapprochées pour pouvoir sauter
@@ -384,6 +325,9 @@ const CLIPS = [
   { src: 'media/v08-pistolet', a: 33, b: 36 },
   { src: 'media/v09-premier-trait', a: 36, b: 39 },
   { src: 'media/v10-construction', a: 39, b: 43 },
+  { src: 'media/v11-revelation', a: 43, b: 48 },
+  { src: 'media/v12-matiere', a: 48, b: 53 },
+  { src: 'media/v13-arcade-flotte', a: 53, b: 56 },
 ];
 const XF = 0.35; // durée du fondu enchaîné, en % de scroll
 const filmEl = document.getElementById('film');
@@ -469,81 +413,11 @@ function frame(now) {
   else { scene.fog.near = 14; scene.fog.far = 120; }
 
   // ---------------- visibilités (on ne dessine que ce qui sert)
-  atelier.visible = gp >= 42.6 && gp < 54;
-  arcade.visible = gp >= 43 && gp < 77.5;
-  galerie.visible = gp >= 55 && gp < 68;
+  arcade.visible = gp >= 55.6 && gp < 77.5;
+  galerie.visible = gp >= 55.6 && gp < 68;
 
   // ================= 01 → 04 début — FILM (vidéos Flow)
   updateFilm(gp);
-
-  // ================= 04 — LE GESTE  (+ début 05)
-  if (atelier.visible) {
-    const p = P[3];
-    const p5 = P[4];
-    // Toile et lignes
-    const fadeOut = 1 - smooth(0.7, 0.85, p5);
-    toile.material.opacity = fadeOut; frameMat.opacity = fadeOut;
-    const rowsFade = 1 - smooth(0.05, 0.35, p5);
-    let active = -1;
-    rows.forEach((r, k) => {
-      const [a, b] = rowWin[k];
-      const d = range(p, a, b);
-      r.visible = d > 0 && rowsFade > 0;
-      r.scale.x = Math.max(0.0001, d * rowW);
-      r.position.x = rowX0 - (d * rowW) / 2;
-      r.material.opacity = rowsFade;
-      if (p >= a && p < b) active = k;
-    });
-    // Pistolet
-    const enter = easeInOut(range(p, 0.1, 0.32));
-    const restPos = V(rowX0, rowY0, 0.25);
-    const g0 = V(9, 2.5, 7);
-    gun.position.lerpVectors(g0, restPos, enter);
-    gun.rotation.set(0.1 * (1 - enter), lerp(1.3, 0, enter), lerp(-0.4, 0, enter));
-    if (active >= 0) {
-      const [a, b] = rowWin[active];
-      const d = range(p, a, b);
-      gun.position.set(rowX0 - d * rowW, rowY0 - active * rowStep, 0.25);
-      gun.position.x += Math.sin(time * 90) * 0.006; gun.position.z += Math.cos(time * 70) * 0.01;
-    } else if (p > 0.35) {
-      // Entre deux lignes : le pistolet remonte au début de la suivante.
-      let k = rowWin.findIndex(([a]) => a > p);
-      if (k < 0) k = ROWS - 1;
-      const prev = Math.max(0, k - 1);
-      const t = smooth(rowWin[prev][1], rowWin[k][0], p);
-      gun.position.set(lerp(rowX0 - rowW, rowX0, t), lerp(rowY0 - prev * rowStep, rowY0 - k * rowStep, t), 0.25 + Math.sin(t * Math.PI) * 0.4);
-    }
-    // Scène 05 : le pistolet trace les formes d'Arcade puis sort.
-    if (p5 > 0) {
-      const t = range(p5, 0, 0.4);
-      const ang = t * Math.PI * 4;
-      const r = ARC_SIZE * lerp(0.62, 0.3, t);
-      const outT = smooth(0.4, 0.55, p5);
-      gun.position.set(Math.cos(ang) * r + outT * 9, -0.3 + Math.sin(ang) * r * 0.9 + outT * 3, 0.35 + outT * 5);
-      gun.rotation.set(0, outT * 1.2, 0);
-    }
-    gun.visible = p5 < 0.56;
-    // Fibres qui suivent la souris
-    const fOn = smooth(0.3, 0.4, p) * (1 - smooth(0.3, 0.5, p5));
-    raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera);
-    if (mouse.has && raycaster.ray.intersectPlane(followPlane, followTarget)) followTarget.sub(C);
-    else followTarget.set(1.5, -1, 1);
-    followers.forEach((f, i) => {
-      const u = f.userData;
-      f.visible = fOn > 0.01;
-      tmpV.copy(followTarget).add(u.off);
-      tmpV.z = 0.3 + u.off.z * 0.6;
-      f.position.lerp(tmpV, Math.min(1, dt * u.k));
-      f.rotation.set(time * u.spin, i, time * u.spin * 0.7);
-      f.material.opacity = fOn;
-    });
-    if (gp >= 30 && gp < 43) {
-      const orbit = 0.26 * Math.sin(Math.PI * range(p, 0.1, 0.36));
-      const d = 12.5 - 3 * smooth(0.6, 1, p);
-      camPos.copy(C).add(V(Math.sin(orbit) * d + mouse.sx * 0.3, 0.4 + mouse.sy * 0.2 - 0.6 * smooth(0.6, 1, p) * 0, Math.cos(orbit) * d));
-      look.copy(C).add(V(0, 0, 0));
-    }
-  }
 
   // ================= ARCADE (05 → 07)
   if (arcade.visible) {
@@ -589,14 +463,6 @@ function frame(now) {
     arcade.position.y += Math.sin(time * 0.7) * 0.06 * floatOn;
     if (gp >= 55 && gp < 67) arcade.position.x += -3.8 * smooth(0, 0.18, P[5]) * (1 - smooth(0.86, 1, P[5]));
 
-    if (gp >= 43 && gp < 55) {
-      // Caméra : se rapproche pour le volume, puis recule — l'œuvre est terminée.
-      const close = smooth(0.52, 0.66, p5) * (1 - smooth(0.7, 0.85, p5));
-      const d = lerp(9.5, 4.2, close) + 1.5 * smooth(0.7, 0.85, p5);
-      const side = close * 2.2;
-      camPos.copy(C).add(V(side + mouse.sx * 0.3, -close * 0.8 + mouse.sy * 0.2, d));
-      look.copy(C).add(V(0, -close * 0.4, 0));
-    }
     if (gp >= 67) {
       const p = p7;
       // Laisse la place au panneau : à gauche sur ordinateur, en bas sur mobile.
@@ -624,7 +490,7 @@ function frame(now) {
   }
   // Survol des œuvres
   let hit = null;
-  if (mouse.has && (gp >= 55 && gp < 67) && !cfg.interactive) {
+  if (mouse.has && (gp >= 56.4 && gp < 67) && !cfg.interactive) {
     raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera);
     const hits = raycaster.intersectObjects(WORKS, true);
     if (hits.length) { let o = hits[0].object; while (o && !o.userData.work) o = o.parent; hit = o; }
@@ -669,7 +535,7 @@ function frame(now) {
   hud.pct.textContent = `${gp.toFixed(1)} %  ·  p ${P[si].toFixed(2)}${cfg.interactive ? '  ·  CONFIG' : ''}`;
   hud.cursor.style.left = `${gp}%`;
 
-  if ((gp >= 42.6 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
+  if ((gp >= 55.6 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 

@@ -1,7 +1,7 @@
 # MARINA LEHACAUT STUDIO — Storyboard du film interactif
 
 > Cahier des charges créatif et technique de l'accueil.
-> **v0.3** — direction artistique ivoire, et intro (0 → 43 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
+> **v0.3** — direction artistique ivoire, et intro (0 → 56 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
 > v0.2 — l'accueil est pensé comme un film interactif, et plus comme une suite de sections.
 > Prototype « gris » correspondant : [`prototype/`](prototype/).
 
@@ -83,8 +83,8 @@ Longueur totale de l'accueil : **≈ 2 000 vh** (20 hauteurs d'écran). Les pour
 | 02 | Entrer dans la matière | 5 → 15 % | 200 | Fil, couleur | Vidéos Flow V02 + V03 | — |
 | 03 | Sortie, envol, explosion | 15 → 30 % | 300 | Couleur | Vidéos Flow V04 → V07 | — |
 | 04 | Le geste | 30 → 43 % | 260 | Geste | Vidéos Flow V07 → V10 | — |
-| 05 | Arcade naît | 43 → 55 % | 240 | Forme, œuvre | WebGL + image HD | **1re apparition** |
-| 06 | La galerie impossible | 55 → 67 % | 240 | Œuvre | WebGL (architecture) | Œuvres cliquables |
+| 05 | Arcade naît | 43 → 56 % | 260 | Forme, œuvre | Vidéos Flow V11 → V13 | **1re apparition** (54 %) |
+| 06 | La galerie impossible | 56 → 67 % | 220 | Œuvre | WebGL (architecture) | Œuvres cliquables |
 | 07 | Casser l'œuvre | 67 → 77 % | 200 | Personnalisation | WebGL + UI | **Configurateur** |
 | 08 | Du digital au réel | 77 → 86 % | 180 | Main | Vraie vidéo | Réassurance |
 | 09 | L'atelier | 86 → 94 % | 160 | Transmission | Vraie vidéo + UI | **Ateliers** |
@@ -272,9 +272,10 @@ On ne génère **jamais** l'intro en une seule vidéo : chaque séquence fait 8�
 | 08 | Le pistolet touche la toile | 33 → 36 % | Flow | ✅ `v08-pistolet` (à refaire, voir 3.3) |
 | 09 | Premier trait corail (TAC) | 36 → 39 % | Flow | ✅ `v09-premier-trait` (à refaire, voir 3.3) |
 | 10 | Construction du motif | 39 → 43 % | Flow | ✅ `v10-construction` (à refaire, voir 3.3) |
-| 11 | Révélation d'Arcade | 43 → 52 % | 3D + photo HD | — |
-| 12 | Matière (travelling sur le tapis fini) | 52 → 55 % | Flow ou vraie macro | ⏳ |
-| 13 | Galerie | 55 → 67 % | **3D** (interactive) | — |
+| 11 | Révélation : le tapis quitte le cadre et flotte | 43 → 48 % | Flow | ✅ `v11-revelation` (tapis à remplacer par Arcade) |
+| 12 | Matière (travelling sur le tapis fini) | 48 → 53 % | Flow | ✅ `v12-matiere` (idem) |
+| 13 | Arcade flotte et tourne dans l'espace ivoire | 53 → 56 % | Flow | ✅ `v13-arcade-flotte` (idem) — fiche **ARCADE Nº01** par-dessus (54 → 56,3 %) |
+| — | Galerie | 56 → 67 % | **3D** (interactive) | — |
 | 14 | Décomposition | 67 → 72 % | **3D** (interactive) | — |
 | 15 | Reconstruction | 72 → 77 % | **3D** (interactive) | — |
 | 16 | Intérieur | configurateur | Photo d'intérieur + vrai tapis incrusté | — |
@@ -308,7 +309,9 @@ La 16 montre un produit que le client va acheter : c'est la vraie photo du tapis
   1. **Trois pistolets différents** : noir et acier à poignée pistolet (V08), mécanisme acier nu (V09), gris industriel à poignée bleue (V10). C'est la rupture la plus visible de tout le film, et la plus repérable par quelqu'un qui tufte. À refaire avec **une seule image de référence du pistolet**, idéalement celui de Marina, fournie à Flow pour les trois plans.
   2. **Le motif de V10 se transforme au lieu de se construire** : des zones déjà tuftées changent de forme d'une image à l'autre. Un œil averti y voit de l'IA. Dans le prompt : « areas that are already tufted never change; new tufted rows are only added next to existing ones ».
   3. **Le décor** : V08–V10 sont dans un atelier meublé (étagères, cônes, fenêtres), et une main apparaît dans V10. Pour la fin du « rêve », préférer la toile et le pistolet dans le vide ivoire, sans main : la main est réservée à la scène 09 (« À vous »).
-- **Le passage à 43 %** : V10 finit sur un motif d'arches, proche de l'esprit d'Arcade mais pas Arcade. C'est aujourd'hui la marche la plus haute du prototype, parce qu'on passe de la vidéo à la 3D grise. Elle disparaîtra avec Arcade vectorisé (vraies zones, vraie laine) ; idéalement V10 se termine sur **une toile ivoire presque vide avec les premières lignes d'Arcade**, pour que la 3D prenne le relais sans rupture.
+- **V11 → V13, la révélation — le point le plus important** : ces trois plans montrent **quatre tapis différents** (celui de V10, le tapis à blocs de V11, le grand tapis au sol de V12, le tapis à arches de V13), et **aucun n'est Arcade**. Or c'est le moment où la fiche « ARCADE Nº01 · 51 × 51 cm · Découvrir la pièce » apparaît : le visiteur doit voir **la vraie œuvre qu'il achète**, sinon on vend une image inventée. V13 montre en plus un tapis rectangulaire en portrait, alors que la fiche annonce un carré de 51 × 51. À refaire avec **la vraie photo d'Arcade** comme image de référence (image de fin de V11, image de départ de V12 et V13). C'est la priorité n° 1 avant toute mise en ligne.
+- **La galerie** : l'image de référence avec plusieurs tapis suspendus dans une salle ivoire à arcades est une très bonne direction pour la **galerie 3D** (architecture ivoire, œuvres inclinées qui flottent, grandes baies). Elle remplacera les arches et dalles grises du prototype.
+- **Le passage à 43 %** (remplacé depuis par V11) : V10 finit sur un motif d'arches, proche de l'esprit d'Arcade mais pas Arcade. C'est aujourd'hui la marche la plus haute du prototype, parce qu'on passe de la vidéo à la 3D grise. Elle disparaîtra avec Arcade vectorisé (vraies zones, vraie laine) ; idéalement V10 se termine sur **une toile ivoire presque vide avec les premières lignes d'Arcade**, pour que la 3D prenne le relais sans rupture.
 
 ### 3.4 Ajout à tous les prompts à partir de V08
 
@@ -416,7 +419,7 @@ Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes
 | Phase | Contenu | Livrable |
 |---|---|---|
 | **1. Prototype gris** ✅ | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme**. |
-| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (tous faits, V04–V06 et V08–V10 à reprendre pour les raccords) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
+| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V13 intégrés au scroll (V04–V06 et V08–V10 à reprendre pour les raccords, V11–V13 à refaire avec le vrai Arcade) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
 | **3. Tournage + assets** | Journée à Colombes, photos des œuvres, modèles 3D. | Assets finaux. |
 | **4. Commerce** | Next.js + Shopify headless : galerie, fiches, panier, configurateur. | Achat de bout en bout. |
 | **5. Finitions** | Scènes 08–10 avec vraies vidéos, mobile, reduced-motion, SEO, perf. | Mise en ligne. |
