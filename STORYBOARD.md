@@ -1,7 +1,8 @@
 # MARINA LEHACAUT STUDIO — Storyboard du film interactif
 
 > Cahier des charges créatif et technique de l'accueil.
-> **v0.2** — l'accueil est pensé comme un film interactif, et plus comme une suite de sections. Remplace la v0.1.
+> **v0.3** — direction artistique ivoire, et intro (0 → 21 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
+> v0.2 — l'accueil est pensé comme un film interactif, et plus comme une suite de sections.
 > Prototype « gris » correspondant : [`prototype/`](prototype/).
 
 ---
@@ -33,8 +34,8 @@ intensité
 1 |   ██             █  ██        ███         ███  ████  ██
 0 |███                ██                                   ███
   +-----------------------------------------------------------
-   VIDE  FIBRE  EXPLOSION  GESTE  ARCADE  GALERIE  CASSER  RÉEL  ATELIER  STUDIO
-   0     8      18         30     43      55       67      77    86       94   100 %
+   FIL   FIBRE  EXPLOSION  GESTE  ARCADE  GALERIE  CASSER  RÉEL  ATELIER  STUDIO
+   0     5      15         30     43      55       67      77    86       94   100 %
 ```
 
 Deux « WOW » seulement : l'explosion (02) et l'œuvre qui se casse (06). Tout le reste est au service de ces deux moments.
@@ -47,44 +48,47 @@ Pendant **43 % du parcours, rien n'est à vendre**. Le premier élément commerc
 
 | Type | Rôle | Scènes |
 |---|---|---|
-| **WebGL / 3D** (Three.js) | Filament, fibres, bobines, explosion, toile, œuvres flottantes, galerie | 01 → 06 |
-| **GSAP** | Caméra virtuelle, textes, transitions, tout ce qui suit le scroll | toutes |
-| **Vraies vidéos** | Mains, tufting, colle, découpe, rasage, atelier | 07, 08 |
-| **Images HD** | Œuvres finales, fiches produit, e-commerce | 04 → 06, pages produit |
+| **Vidéos CGI générées (Flow)** | Fil, entrée dans la matière, couleur, sortie vers la bobine, envol, explosion, toile, pistolet | 01 → 04 |
+| **WebGL / 3D** (Three.js) | Tout ce qui doit **réagir** au visiteur : Arcade qui naît en zones, galerie impossible, Arcade qui se casse, configurateur | 05 → 07 |
+| **GSAP** | Lecture des vidéos au scroll, caméra virtuelle, textes, transitions | toutes |
+| **Vraies vidéos tournées** | Mains, tufting, colle, découpe, rasage, atelier, participant·e | 08, 09 |
+| **Images HD** | Œuvres finales, fiches produit, e-commerce | 05 → 07, pages produit |
 
-Pas de vidéo générée par IA. La 3D crée le rêve, la vidéo réelle crée la confiance.
+**Règle de partage** : un plan *linéaire* (le visiteur le regarde) peut être une vidéo générée ; un plan *interactif* (le visiteur agit dessus) doit être en 3D ; un plan qui doit *prouver* (« ça existe ») doit être une vraie vidéo. Les textes ne sont **jamais** dans les vidéos : ils sont en HTML par-dessus (nets, traduisibles, indexables).
+
+La vidéo générée crée le rêve, la vidéo réelle crée la confiance.
 
 ### 0.5 Garde-fous (non négociables)
 
 | Sujet | Règle |
 |---|---|
 | **Visiteur pressé** | Pas de menu au début (c'est voulu), mais un lien minuscule **« Passer »** en bas à gauche + touche Échap. Un visiteur qui revient arrive directement à la scène 06, la galerie (mémorisé localement). |
-| **Menu** | Invisible de 0 à 8 %. Le monogramme apparaît avec le titre (≈ 6 %), le menu complet et le panier à 43 %, au moment où le commerce commence. |
+| **Menu** | Invisible au début. Le monogramme apparaît avec le titre (≈ 1,2 %), le menu complet et le panier à 43 %, au moment où le commerce commence. |
 | **Le scroll ne bloque jamais** | La personnalisation (scène 06) est *jouable* pendant le scroll, mais n'est jamais obligatoire : continuer à scroller fait avancer le film. Le configurateur complet vit sur sa propre page. |
 | **SEO** | Le titre, la présentation du studio et les liens vers les œuvres et ateliers existent dans le HTML dès le chargement. Les pages œuvres/ateliers sont des pages classiques rendues côté serveur. |
 | **Accessibilité** | `prefers-reduced-motion` → version « éditoriale » : mêmes textes et images, fondus simples, pas de caméra. |
 | **Son** | Coupé par défaut, icône en bas à droite. |
-| **Mobile** | Les interactions souris deviennent : inclinaison du téléphone (si autorisée) ou toucher-glisser. La 3D baisse en densité (moins de fibres, pas de post-process) ; sous un certain niveau de GPU, les scènes 01–02 passent en vidéo pré-rendue. |
-| **Performance** | Premier affichage < 2,5 s en 4G. La scène 00 est légère ; le reste se charge pendant que le visiteur regarde le filament. |
+| **Mobile** | Les interactions souris deviennent : inclinaison du téléphone (si autorisée) ou toucher-glisser. La 3D baisse en densité (pas de post-process). Les vidéos de l'intro ont une version portrait recadrée et plus légère. |
+| **Performance** | Premier affichage < 2,5 s en 4G : la 1re image de V01 (espace ivoire presque vide) sert d'affiche. Les vidéos suivantes et la 3D se chargent pendant que le visiteur regarde le fil. |
 
 ---
 
 ## 1. Timeline
 
-Longueur totale de l'accueil : **≈ 1 600 vh** (16 hauteurs d'écran). Les pourcentages sont la progression globale du scroll.
+Longueur totale de l'accueil : **≈ 2 000 vh** (20 hauteurs d'écran). Les pourcentages sont la progression globale du scroll. **1 % = 20 vh** : un plan vidéo de 10 s sur 5 % se lit en 100 vh, soit environ une hauteur d'écran de scroll.
 
 | # | Scène | Plage | vh | Maillon | Technique | Commerce |
 |---|---|---|---|---|---|---|
-| 01 | Le vide | 0 → 8 % | 130 | Fibre | WebGL (1 filament) | — |
-| 02 | Entrer dans la fibre | 8 → 18 % | 160 | Fil, couleur | WebGL (fibres) | — |
-| 03 | L'explosion | 18 → 30 % | 190 | Couleur | WebGL (bobines, fils) | — |
-| 04 | Le geste | 30 → 43 % | 210 | Geste | WebGL + objet 3D pistolet | — |
-| 05 | Arcade naît | 43 → 55 % | 190 | Forme, œuvre | WebGL + image HD | **1re apparition** |
-| 06 | La galerie impossible | 55 → 67 % | 190 | Œuvre | WebGL (architecture) | Œuvres cliquables |
-| 07 | Casser l'œuvre | 67 → 77 % | 160 | Personnalisation | WebGL + UI | **Configurateur** |
-| 08 | Du digital au réel | 77 → 86 % | 150 | Main | Vraie vidéo | Réassurance |
-| 09 | L'atelier | 86 → 94 % | 130 | Transmission | Vidéo + UI | **Ateliers** |
-| 10 | Le studio | 94 → 100 % | 100 | — | HTML | Navigation normale |
+| 01 | Le fil | 0 → 5 % | 100 | Fibre, fil | Vidéo Flow V01 | — |
+| 02 | Entrer dans la matière | 5 → 15 % | 200 | Fil, couleur | Vidéos Flow V02 + V03 | — |
+| 03 | Sortie, envol, explosion | 15 → 30 % | 300 | Couleur | Vidéos Flow V04 → V07 | — |
+| 04 | Le geste | 30 → 43 % | 260 | Geste | Vidéos Flow V08 → V10 (prototype : 3D) | — |
+| 05 | Arcade naît | 43 → 55 % | 240 | Forme, œuvre | WebGL + image HD | **1re apparition** |
+| 06 | La galerie impossible | 55 → 67 % | 240 | Œuvre | WebGL (architecture) | Œuvres cliquables |
+| 07 | Casser l'œuvre | 67 → 77 % | 200 | Personnalisation | WebGL + UI | **Configurateur** |
+| 08 | Du digital au réel | 77 → 86 % | 180 | Main | Vraie vidéo | Réassurance |
+| 09 | L'atelier | 86 → 94 % | 160 | Transmission | Vraie vidéo + UI | **Ateliers** |
+| 10 | Le studio | 94 → 100 % | 120 | — | HTML | Navigation normale |
 
 ---
 
@@ -92,57 +96,36 @@ Longueur totale de l'accueil : **≈ 1 600 vh** (16 hauteurs d'écran). Les pour
 
 Pour chaque scène, `p` est la progression locale de 0 à 1.
 
-### 01 — LE VIDE (0 → 8 %)
+### 01 — LE FIL (0 → 5 %) — vidéo V01 ✅
 
-```
-┌──────────────────────────────────────────────┐
-│                                              │
-│                                              │
-│                                              │
-│                      ·~                      │  ← un filament minuscule
-│                                              │
-│                                              │
-│                                              │
-│ passer                                   🔇  │
-└──────────────────────────────────────────────┘
-fond #0B0A09 — noir chaud
-```
+Fond **ivoire chaud** (plus de noir). Un espace vide et lumineux, un fil corail qui entre par la gauche, puis la caméra s'approche jusqu'à ce que le fil remplisse l'écran.
 
-| p | Caméra | Image | Texte |
-|---|---|---|---|
-| avant scroll | Fixe, très loin | Un filament de laine de 2–3 cm à l'écran, légèrement ondulant. La souris le fait onduler un peu plus (réaction lente, comme dans l'eau). | — |
-| 0,0 → 0,6 | Travelling avant lent | Le filament grandit, remplit l'écran. On découvre la torsion, le duvet, les fibres qui dépassent. Lumière rasante. | — |
-| 0,6 → 0,9 | Continue | Le filament occupe tout l'écran, en diagonale. | **MARINA LEHACAUT / STUDIO** apparaît, **très petit** (11 px, lettres espacées), centré. |
-| 0,9 → 1 | Accélère légèrement | On fonce vers la surface du filament. | Le titre s'efface. |
-
-**Interaction** : la souris déplace le filament de quelques pixels (ressort amorti). Sur mobile : inclinaison.
-**Technique** : courbe 3D + shader de fibre (torsion + duvet en particules). Pas de vidéo ici : le filament doit réagir à la souris.
-
-### 02 — ENTRER DANS LA FIBRE (8 → 18 %)
-
-| p | Caméra | Image |
+| p | Image (V01) | Texte (HTML) |
 |---|---|---|
-| 0,0 → 0,3 | Traverse la surface | On passe *entre* les fibres : des dizaines de filaments en tube autour de la caméra, crème/écru. |
-| 0,3 → 0,7 | Travelling continu, rotation lente sur l'axe | Les fibres deviennent abstraites (plus lisses, plus lumineuses) et prennent couleur une à une : **rouge → orange → bleu → rose → jaune** (couleurs réelles des laines d'Arcade, Cubix, Vortex). La couleur envahit l'espace. |
-| 0,7 → 0,85 | **Recul brutal** (0,15 de p pour une grande distance, easing sec) | On ressort de la matière… |
-| 0,85 → 1 | Stabilisé | … et on découvre que tout ce fil sort d'**une bobine**, qui flotte seule dans le noir. |
+| avant scroll | Espace ivoire presque vide, lumière de fenêtre douce. | « faites défiler ↓ » |
+| 0,2 → 0,6 | Le fil corail entre et dessine une courbe. | **MARINA LEHACAUT / STUDIO**, très petit, en haut du tiers central (1,2 → 2,9 %). Monogramme MLS dans la nav. |
+| 0,6 → 1 | Travelling avant : le fil grandit, le duvet apparaît, il remplit l'écran. | — |
 
-**Transition vers 03** : la bobine découverte *est* la première bobine de l'explosion. Aucune coupe.
+**Interaction** : légère parallaxe de l'image à la souris (la matière « respire »). La vidéo avance et recule avec le scroll.
 
-### 03 — L'EXPLOSION (18 → 30 %) — WOW 1
+### 02 — ENTRER DANS LA MATIÈRE (5 → 15 %) — vidéos V02 ✅ + V03 ✅
 
-| p | Image | Texte / son |
+| Plage | Image | Raccord |
 |---|---|---|
-| 0,00 | 1 bobine, rotation lente. | — |
-| 0,15 | 3 bobines. | — |
-| 0,30 | 10 bobines, en apesanteur, orientations variées. Le scroll les fait tourner, la souris décale doucement tout le nuage. | — |
-| 0,45 | 30 bobines. La rotation accélère. | (son) montée textile |
-| 0,58 | **Figé, 0,2 s**. | Silence |
-| 0,60 | 💥 Les bobines sont projetées hors du centre. Des centaines de fils se déroulent et traversent l'écran. | (son) souffle |
-| 0,65 → 0,80 | **La caméra traverse l'explosion** (avance au milieu des fils qui passent devant elle). | **LA COULEUR N'A PAS DE LIMITES.** — une fraction de seconde (≈ 0,08 de p), plein écran. |
-| 0,80 → 1 | Les fils ralentissent, s'éloignent, disparaissent. Fond qui s'éclaircit. | **Silence visuel.** |
+| 5 → 10 % (V02) | On plonge dans le fil corail ; des fibres écrues géantes, puis des fibres framboise et rouges apparaissent. | Fondu court depuis la dernière image de V01 (fil corail en gros plan). |
+| 10 → 15 % (V03) | Paysage de laines tressées corail/framboise, puis jaune, orange, bleu marine, cobalt envahissent l'espace, lumière ivoire au fond. | Fondu court. |
 
-**Technique** : `InstancedMesh` pour les bobines (modèle ≈ 3 000 triangles, normal map laine), fils en courbes animées sur GPU (400 desktop / 120 mobile). Bloom léger uniquement autour de 0,6.
+### 03 — SORTIE, ENVOL, EXPLOSION (15 → 30 %) — WOW 1
+
+| Plage | Image | Statut |
+|---|---|---|
+| 15 → 21 % (V04) | Tunnel de laine multicolore → la caméra recule → **c'était le fil enroulé sur une bobine** qui flotte dans l'ivoire → d'autres bobines apparaissent. | ✅ |
+| 21 → 25 % (V05) | L'envol : les bobines se multiplient en profondeur, fils qui traînent, puis elles accélèrent vers un point central. | ⏳ à générer (prototype : 3D provisoire) |
+| 25 → 30 % (V06) | Arrêt, puis explosion élégante : les bobines partent, des centaines de fils traversent l'image, la caméra passe au travers. Se termine par **un fil corail qui balaie tout l'écran**. | ⏳ à générer (prototype : 3D provisoire) |
+
+Texte HTML : **LA COULEUR N'A PAS DE LIMITES.** une fraction de seconde au cœur de l'explosion (≈ 26,7 → 27,6 %).
+
+Le fil corail plein écran de la fin de V06 sert de transition vers la toile de la scène 04 : **explosion → fil plein écran → fil qui traverse une toile → tufting gun**.
 
 ### 04 — LE GESTE (30 → 43 %)
 
@@ -168,7 +151,7 @@ fond écru #EEE9E1
 
 **Participation du visiteur** : autour du curseur, quelques fibres libres flottent et suivent le mouvement avec retard, puis se déposent près de la ligne en cours. Le visiteur ne dessine **pas** : il a juste l'impression d'accompagner la naissance.
 
-**Technique** : pistolet = **modèle 3D** (glTF, ≈ 15 000 triangles) puisqu'il doit tourner dans l'espace. Lignes = bandes de laine générées (géométrie + normal map). Les lignes tracées ici *sont* les premières lignes du motif d'Arcade.
+**Technique** : vidéos Flow V07 → V10 lues au scroll (le prototype utilise encore une 3D provisoire). Les fibres qui suivent la souris sont une fine couche WebGL transparente **par-dessus** la vidéo. Les lignes tracées ici *sont* les premières lignes du motif d'Arcade : la forme exacte d'Arcade prend le relais en 3D/photo à la scène 05 (voir § 3.3).
 
 ### 05 — ARCADE NAÎT (43 → 55 %)
 
@@ -270,7 +253,83 @@ Silence. Fond clair. Une seule œuvre. Retour à une navigation parfaitement nor
 
 ---
 
-## 3. Parcours après l'accueil
+## 3. Production vidéo Flow
+
+On ne génère **jamais** l'intro en une seule vidéo : chaque séquence fait 8–10 s, et c'est le site qui les raccorde et les lit au rythme du scroll. On avance comme une production : une séquence validée devient la référence visuelle de la suivante.
+
+### 3.1 Découpage et statut
+
+| V | Séquence | Place sur le site | Fabrication | Statut |
+|---|---|---|---|---|
+| 01 | Le fil | 0 → 5 % | Flow | ✅ `v01-fil` |
+| 02 | Entrée dans la matière | 5 → 10 % | Flow | ✅ `v02-matiere` |
+| 03 | La couleur | 10 → 15 % | Flow | ✅ `v03-couleur` |
+| 04 | Sortie → la bobine | 15 → 21 % | Flow | ✅ `v04-sortie` |
+| 05 | L'envol | 21 → 25 % | Flow | ⏳ prochaine |
+| 06 | Explosion | 25 → 30 % | Flow | ⏳ |
+| 07 | Transition toile (fil plein écran → toile claire) | 30 → 32 % | Flow | ⏳ |
+| 08 | Le tufting gun entre | 32 → 36 % | Flow | ⏳ |
+| 09 | Premier trait (TAC) | 36 → 39 % | Flow | ⏳ |
+| 10 | Construction du motif | 39 → 43 % | Flow **ou** 3D | ⏳ voir 3.3 |
+| 11 | Révélation d'Arcade | 43 → 52 % | 3D + photo HD | — |
+| 12 | Matière (travelling sur le tapis fini) | 52 → 55 % | Flow ou vraie macro | ⏳ |
+| 13 | Galerie | 55 → 67 % | **3D** (interactive) | — |
+| 14 | Décomposition | 67 → 72 % | **3D** (interactive) | — |
+| 15 | Reconstruction | 72 → 77 % | **3D** (interactive) | — |
+| 16 | Intérieur | configurateur | Photo d'intérieur + vrai tapis incrusté | — |
+| 17 | Retour au réel | 77 % | **Vraie vidéo** | à tourner |
+| 18 | Fabrication | 77 → 86 % | **Vraie vidéo** | à tourner |
+| 19 | Atelier | 86 → 90 % | **Vraie vidéo** | à tourner |
+| 20 | Transmission | 90 → 94 % | **Vraie vidéo** | à tourner |
+
+Les séquences 13 à 15 peuvent quand même être générées dans Flow pour les réseaux sociaux ou comme référence de mise en scène, mais sur le site elles doivent réagir au visiteur (survol, clic, couleurs choisies) : elles sont en 3D.
+Les séquences 17 à 20 doivent être **tournées pour de vrai** : leur rôle est de prouver « ça existe, c'est fait à la main à Colombes ». Un plan généré ici détruirait l'argument.
+La 16 montre un produit que le client va acheter : c'est la vraie photo du tapis incrustée dans un intérieur, jamais un tapis réinventé par l'IA.
+
+### 3.2 Règles de raccord
+
+1. **La dernière image d'une séquence est l'image de départ de la suivante** (« frames to video » dans Flow). Les dernières images des plans validés sont dans [`flow/frames/`](flow/frames/).
+2. Le prompt maître (ADN commun) est collé dans **chaque** prompt, sans modification.
+3. Même format partout : 16:9, 1920 × 1080, 24 i/s, 8–10 s, **sans son**, **sans texte**.
+4. Même vitesse de caméra en fin de plan N et en début de plan N+1. Si Flow démarre « à l'arrêt », le site masque 0,3 s de raccord par un fondu enchaîné, pas plus.
+5. On garde l'ivoire chaud comme fond de tous les plans « rêve ». Pas de pièce réelle (fenêtres, sol béton) sauf décision contraire.
+
+### 3.3 Observations sur V01 → V04
+
+- **Ce qui marche** : l'ivoire, la texture de laine, la palette (corail, framboise, orange, jaune, marine, cobalt), et la révélation « c'était une bobine » de V04. Les quatre raccords passent avec un fondu de 0,35 % de scroll.
+- **Doublon** : deux des fichiers reçus sont identiques (`Coral_red_wool_thread_floating…`) ; un seul est utilisé.
+- **Type de bobine — à trancher avant V05** : V04 finit sur des **bobines en bois à joues** (type couture), multicolores. Les images de référence `ref-explosion-bobines.jpg` et `ref-bobine-flottante.jpg` montrent des **tubes à mandrin carton sans joues**, et l'atelier utilise des **cônes**. Recommandation : garder V04 et, pour V05–V06, partir de sa dernière image en écrivant explicitement « the same wooden flanged spools as in the start image ». Sinon Flow changera de bobine au milieu du film.
+- `ref-explosion-bobines.jpg` (sphère de bobines dans une salle d'exposition) : très bonne référence de **composition** pour l'instant figé avant l'explosion, mais son décor (fenêtres, sol béton) casse l'espace ivoire abstrait. À utiliser comme inspiration, pas comme image de départ.
+- **Construction d'Arcade (V10)** : Flow ne reproduira pas fidèlement le vrai motif d'Arcade. Deux options : (a) Flow génère le geste et les lignes, et la forme exacte d'Arcade est révélée en 3D/photo par-dessus ; (b) tout en 3D. Recommandé : (a).
+
+### 3.4 Ajouts aux prompts V05 et V06
+
+À ajouter à la fin des prompts de V05 et V06, avec la dernière image de V04 (puis de V05) comme image de départ :
+
+```text
+Start exactly from the provided start image.
+Keep the same wooden flanged spools with multicolored wool, the same warm ivory void,
+the same soft window light and the same camera lens.
+No room, no walls, no floor details, no windows in view.
+Silent. No text.
+```
+
+### 3.5 Encodage pour le site
+
+Chaque plan est livré en deux fichiers (`prototype/media/`), avec des images clés très rapprochées pour pouvoir sauter à n'importe quelle image au scroll :
+
+```bash
+# Safari : H.264, toutes images clés
+ffmpeg -i in.mp4 -an -vf scale=1280:-2 -c:v libx264 -preset slow -crf 28 -g 1 -pix_fmt yuv420p -movflags +faststart out.mp4
+# Chrome / Firefox : VP9, une image clé toutes les 6 images
+ffmpeg -i in.mp4 -an -vf scale=1280:-2 -c:v libvpx-vp9 -crf 38 -b:v 0 -g 6 -row-mt 1 out.webm
+```
+
+Poids actuel : 1,4 à 3,8 Mo par plan en WebM, 3 à 5 Mo en MP4. Pour la production : version mobile portrait recadrée (720 px de large), et première image de V01 en affiche.
+
+---
+
+## 4. Parcours après l'accueil
 
 ```
                            ACCUEIL (film)
@@ -292,7 +351,7 @@ Les pages intérieures sont sobres et rapides. L'immersion vit dans l'accueil, d
 
 ---
 
-## 4. Architecture technique
+## 5. Architecture technique
 
 | Couche | Choix |
 |---|---|
@@ -300,18 +359,18 @@ Les pages intérieures sont sobres et rapides. L'immersion vit dans l'accueil, d
 | Scroll | Lenis (inertie) + GSAP ScrollTrigger (timelines) |
 | 3D | Three.js via React Three Fiber — **un seul canvas** pour tout l'accueil |
 | Shaders | GLSL : fibre, laine/relief, dissolution, explosion |
-| Modèles | glTF compressés (Draco/Meshopt) : bobine, pistolet |
-| Vidéo | MP4 H.264 (scrub, images clés rapprochées) + WebM |
+| Modèles | glTF compressés (Draco/Meshopt), si besoin pour les scènes 05–07 |
+| Vidéo | Plans Flow + vraies vidéos, lus au scroll : WebM VP9 + MP4 H.264, images clés rapprochées (voir § 3.5) |
 | Commerce | Shopify headless (Storefront API) : produits, variantes, stock, panier, paiement |
 | Hébergement | Vercel |
 
 **Principe clé : une seule timeline maîtresse.** Tout l'état visuel (caméra, objets, textes) est une fonction pure de la progression du scroll. On peut aller en avant, en arrière, recharger au milieu : l'image est toujours la bonne. Le prototype applique déjà ce principe.
 
-**Budget** : JS initial < 150 Ko ; 3D scènes 01–07 < 3 Mo au total, chargées progressivement ; vidéo 08 < 6 Mo desktop / 3 Mo mobile ; 60 fps desktop, 30 fps minimum mobile.
+**Budget** : JS initial < 150 Ko ; vidéos de l'intro chargées une par une, en avance d'un plan (≈ 3 Mo chacune desktop, 1,5 Mo mobile) ; 3D scènes 05–07 < 3 Mo ; 60 fps desktop, 30 fps minimum mobile.
 
 ---
 
-## 5. Assets à réunir
+## 6. Assets à réunir
 
 | # | Asset | Scène | Priorité |
 |---|---|---|---|
@@ -320,8 +379,8 @@ Les pages intérieures sont sobres et rapides. L'immersion vit dans l'accueil, d
 | 3 | Photos HD de face de chaque œuvre (lumière diffuse + rasante) | 05, 06, pages | ★★★ |
 | 4 | Journée de tournage macro : main, tufting, colle, découpe, rasage, fibres, tapis retourné | 08 | ★★★ |
 | 5 | Plans atelier : pistolet posé, seconde main qui le saisit | 09 | ★★ |
-| 6 | Modèle 3D du tufting gun (modélisation à partir de photos du vrai) | 04 | ★★ |
-| 7 | Modèle 3D d'une bobine + photo de la texture de laine | 01–03 | ★★ |
+| 6 | Vidéos Flow V05 → V10 et V12 (voir § 3) | 03, 04 | ★★★ |
+| 7 | Photos du vrai tufting gun (référence pour Flow) | 04 | ★★ |
 | 8 | Nuancier des laines disponibles pour la personnalisation | 07 | ★★ |
 | 9 | Formats et prix de chaque modèle | 05, 07 | ★★★ |
 | 10 | Textes : œuvres, studio, formules d'ateliers | 05, 06, 09 | ★★★ |
@@ -331,7 +390,7 @@ Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes
 
 ---
 
-## 6. Décisions à prendre
+## 7. Décisions à prendre
 
 1. **Arcade** est-il bien l'œuvre signature, et fait-il bien 51 × 51 cm dans sa version originale ?
 2. **Personnalisation** : quelles zones d'Arcade sont modifiables (proposition : 3 à 5), quelles laines, quels prix par format ?
@@ -339,15 +398,16 @@ Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes
 4. **Ateliers** : formules exactes, prix, capacité, outil de réservation.
 5. **Shopify** : compte existant ? produits déjà saisis ?
 6. **Tournage** : qui filme, quand ?
+7. **Bobines** : on garde les bobines à joues de V04 pour toute l'intro, ou on régénère V04 avec des cônes/tubes comme dans les références ?
 
 ---
 
-## 7. Plan de réalisation
+## 8. Plan de réalisation
 
 | Phase | Contenu | Livrable |
 |---|---|---|
-| **1. Prototype gris** ✅ démarré | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme** avant toute production. |
-| **2. Scènes signatures** | Filament + fibres + explosion en vraie 3D ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
+| **1. Prototype gris** ✅ | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme**. |
+| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (V01 → V04 faits) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
 | **3. Tournage + assets** | Journée à Colombes, photos des œuvres, modèles 3D. | Assets finaux. |
 | **4. Commerce** | Next.js + Shopify headless : galerie, fiches, panier, configurateur. | Achat de bout en bout. |
 | **5. Finitions** | Scènes 08–10 avec vraies vidéos, mobile, reduced-motion, SEO, perf. | Mise en ligne. |

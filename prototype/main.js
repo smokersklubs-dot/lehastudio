@@ -4,15 +4,18 @@
 // fonction pure de la progression globale du scroll `gp` (0 → 100). On peut avancer,
 // reculer ou recharger au milieu : l'image est toujours la bonne.
 // Seules exceptions : l'ondulation au repos, la souris, et le mode interactif de la scène 07.
+//
+// 0 → 21 % : vraies vidéos (Flow) lues au rythme du scroll, voir FILM plus bas.
+// 21 → 30 % : envol + explosion en 3D provisoire, en attendant les vidéos V05 et V06.
 
 import * as THREE from './vendor/three.module.min.js';
 import Lenis from './vendor/lenis.mjs';
 
 // ---------------------------------------------------------------- timeline
 const SCENES = [
-  { id: '01', name: 'Le vide', a: 0, b: 8 },
-  { id: '02', name: 'Entrer dans la fibre', a: 8, b: 18 },
-  { id: '03', name: "L'explosion", a: 18, b: 30 },
+  { id: '01', name: 'Le fil', a: 0, b: 5 },
+  { id: '02', name: 'Entrer dans la matière', a: 5, b: 15 },
+  { id: '03', name: "Sortie, envol, explosion", a: 15, b: 30 },
   { id: '04', name: 'Le geste', a: 30, b: 43 },
   { id: '05', name: 'Arcade naît', a: 43, b: 55 },
   { id: '06', name: 'La galerie impossible', a: 55, b: 67 },
@@ -28,7 +31,6 @@ const WOOL = {
   jaune: '#F2C230', ecru: '#EDE6DA', sauge: '#7F9A7A', encre: '#1E1C1A',
 };
 const PALETTE5 = [WOOL.rouge, WOOL.orange, WOOL.bleu, WOOL.rose, WOOL.jaune];
-const NOIR = new THREE.Color('#0B0A09');
 const ECRU = new THREE.Color('#EEE9E1');
 const GALERIE = new THREE.Color('#E6E0D6');
 
@@ -51,7 +53,7 @@ const canvas = document.getElementById('gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(NOIR, 1, 100);
+scene.fog = new THREE.Fog(ECRU, 1, 100);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 260);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8074, 1.3));
 const key = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -94,61 +96,6 @@ addEventListener('pointermove', (e) => {
   mouse.y = -(e.clientY / innerHeight) * 2 + 1;
   mouse.px = e.clientX; mouse.py = e.clientY; mouse.has = true;
 });
-
-// =====================================================================
-// 01 — LE VIDE : un filament
-// =====================================================================
-const filGroup = new THREE.Group();
-scene.add(filGroup);
-{
-  const N = 120, pts = [];
-  for (let i = 0; i <= N; i++) {
-    const t = i / N;
-    pts.push(V((t - 0.5) * 3, Math.sin(t * 9) * 0.05, Math.cos(t * 7) * 0.04));
-  }
-  const core = new THREE.CatmullRomCurve3(pts);
-  filGroup.add(new THREE.Mesh(new THREE.TubeGeometry(core, 400, 0.011, 10), woolMat(WOOL.ecru, 1)));
-  // Trois brins torsadés autour de l'âme : on les découvre en s'approchant.
-  for (let k = 0; k < 3; k++) {
-    const hp = [];
-    for (let i = 0; i <= N * 6; i++) {
-      const t = i / (N * 6), p = core.getPoint(t), a = t * 260 + (k * Math.PI * 2) / 3;
-      hp.push(V(p.x, p.y + Math.cos(a) * 0.014, p.z + Math.sin(a) * 0.014));
-    }
-    const m = woolMat(['#EFE7DA', '#E4D9C7', '#F5EFE5'][k], 1);
-    filGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hp), 1600, 0.009, 8), m));
-  }
-  // Duvet : fibres qui dépassent.
-  const fuzz = new Float32Array(3000 * 3);
-  for (let i = 0; i < 3000; i++) {
-    const p = core.getPoint(Math.random()), a = Math.random() * 6.28, r = rr(0.016, 0.05);
-    fuzz.set([p.x + rr(-0.01, 0.01), p.y + Math.cos(a) * r, p.z + Math.sin(a) * r], i * 3);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(fuzz, 3));
-  filGroup.add(new THREE.Points(g, new THREE.PointsMaterial({ color: '#EDE3D2', size: 0.0007, transparent: true, opacity: 0.8 })));
-  filGroup.rotation.z = -0.55;
-}
-
-// =====================================================================
-// 02 — ENTRER DANS LA FIBRE : un tunnel de fibres
-// =====================================================================
-const tunnel = new THREE.Group();
-scene.add(tunnel);
-const fibers = [];
-for (let i = 0; i < 170; i++) {
-  const r = rr(0.25, 3), th = rand() * 6.28, pts = [];
-  for (let k = 0; k <= 8; k++) {
-    const z = 2 - k * 8.5;
-    pts.push(V(Math.cos(th) * r + rr(-0.15, 0.15), Math.sin(th) * r + rr(-0.15, 0.15), z));
-  }
-  const mat = new THREE.MeshStandardMaterial({ color: WOOL.ecru, roughness: 0.6 });
-  const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, rr(0.012, 0.05), 6), mat);
-  const c = i % 5;
-  m.userData = { target: new THREE.Color(PALETTE5[c]), th: 0.3 + c * 0.07 + rr(0, 0.05) };
-  fibers.push(m);
-  tunnel.add(m);
-}
 
 // =====================================================================
 // 03 — L'EXPLOSION : bobines + fils
@@ -478,6 +425,54 @@ $('#studio-art').innerHTML = `
 const SHOTS = ['La main de Marina.', 'Le tufting gun pique la toile.', 'La laine, les bobines.', 'La colle étalée au dos.', 'La découpe.', 'Le rasage.', 'Les fibres qui volent.', 'Le tapis terminé, retourné.'];
 
 // =====================================================================
+// FILM — vidéos Flow pilotées par le scroll (0 → 21 %)
+// =====================================================================
+// Chaque plan occupe une plage du scroll ; sa position dans la plage donne son temps.
+// Deux encodages par plan, avec des images clés très rapprochées pour pouvoir sauter
+// à n'importe quelle image sans saccade : WebM/VP9 (Chrome, Firefox) et MP4/H.264
+// « toutes images clés » (Safari). Entre deux plans : fondu enchaîné court.
+const CLIPS = [
+  { src: 'media/v01-fil', a: 0, b: 5 },
+  { src: 'media/v02-matiere', a: 5, b: 10 },
+  { src: 'media/v03-couleur', a: 10, b: 15 },
+  { src: 'media/v04-sortie', a: 15, b: 21 },
+];
+const EXPLO = { a: 21, b: 30 }; // à remplacer par V05 (envol) + V06 (explosion)
+const XF = 0.35; // durée du fondu enchaîné, en % de scroll
+const filmEl = document.getElementById('film');
+for (const c of CLIPS) {
+  const v = document.createElement('video');
+  for (const [ext, type] of [['webm', 'video/webm; codecs="vp9"'], ['mp4', 'video/mp4']]) {
+    const so = document.createElement('source'); so.src = `${c.src}.${ext}`; so.type = type; v.appendChild(so);
+  }
+  v.muted = true; v.playsInline = true; v.preload = 'auto';
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+  filmEl.appendChild(v);
+  c.el = v;
+}
+// iOS n'affiche une vidéo scrubbée qu'après une première lecture déclenchée par un geste.
+addEventListener('touchstart', () => { for (const c of CLIPS) c.el.play().then(() => c.el.pause()).catch(() => {}); }, { once: true, passive: true });
+
+function updateFilm(gp) {
+  const on = gp < CLIPS[CLIPS.length - 1].b + XF;
+  filmEl.style.visibility = on ? 'visible' : 'hidden';
+  if (!on) return;
+  // Légère parallaxe à la souris : la matière « respire ».
+  filmEl.style.transform = `scale(1.04) translate(${-mouse.sx * 0.8}%, ${mouse.sy * 0.6}%)`;
+  CLIPS.forEach((c, i) => {
+    const last = i === CLIPS.length - 1;
+    const o = Math.min(i === 0 ? 1 : range(gp, c.a - XF, c.a), last ? 1 - range(gp, c.b, c.b + XF) : 1);
+    const visible = gp >= c.a - XF && gp < c.b + XF;
+    c.el.style.opacity = visible ? o : 0;
+    // Le plan suivant se pose par-dessus le précédent : pas de creux de luminosité.
+    c.el.style.zIndex = i;
+    if (!visible || !c.el.duration || c.el.seeking) return;
+    const t = range(gp, c.a, c.b) * (c.el.duration - 0.05);
+    if (Math.abs(c.el.currentTime - t) > 1 / 60) c.el.currentTime = t;
+  });
+}
+
+// =====================================================================
 // Scroll
 // =====================================================================
 const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
@@ -520,63 +515,25 @@ function frame(now) {
   let camPos = V(0, 0, 10), look = V(0, 0, 0), roll = 0;
 
   // ---------------- fond, brouillard
-  bg.copy(NOIR).lerp(ECRU, smooth(29.3, 30.2, gp)).lerp(GALERIE, smooth(55, 58, gp) * (1 - smooth(66, 68, gp)));
+  bg.copy(ECRU).lerp(GALERIE, smooth(55, 58, gp) * (1 - smooth(66, 68, gp)));
   renderer.setClearColor(bg);
   scene.fog.color.copy(bg);
-  if (gp < 8) { scene.fog.near = 1; scene.fog.far = 200; }
-  else if (gp < 18) { scene.fog.near = 2; scene.fog.far = P[1] < 0.7 ? 34 : 60; }
-  else if (gp < 30) { scene.fog.near = 6; scene.fog.far = 60; }
+  if (gp < 30) { scene.fog.near = 6; scene.fog.far = 60; }
   else if (gp >= 55 && gp < 67) { scene.fog.near = 10; scene.fog.far = lerp(15, 75, smooth(55, 58.5, gp)); } // la galerie se découvre
   else { scene.fog.near = 14; scene.fog.far = 120; }
 
   // ---------------- visibilités (on ne dessine que ce qui sert)
-  filGroup.visible = gp < 8.2;
-  tunnel.visible = gp >= 7.8 && P[1] < 0.7;
-  spoolWorld.visible = P[1] >= 0.7 && gp < 30.3;
+  spoolWorld.visible = gp >= EXPLO.a - 0.5 && gp < 30.3;
   atelier.visible = gp >= 29.5 && gp < 54;
   arcade.visible = gp >= 43 && gp < 77.5;
   galerie.visible = gp >= 55 && gp < 68;
 
-  // ================= 01 — LE VIDE
-  if (gp < 8.2) {
-    const p = P[0];
-    const z = 42 * Math.pow(0.055 / 42, easeInOut(p) * 0.92 + p * 0.08);
-    const k = Math.min(1, z / 6); // la souris compte moins quand on est collé à la matière
-    camPos.set(mouse.sx * 0.9 * k, mouse.sy * 0.5 * k, z);
-    look.set(0, 0, 0);
-    filGroup.rotation.x = mouse.sy * 0.25 + Math.sin(time * 0.6) * 0.04;
-    filGroup.rotation.y = mouse.sx * 0.35;
-    filGroup.position.y = Math.sin(time * 0.8) * 0.01;
-    roll = p * 0.3;
-  }
-
-  // ================= 02 — ENTRER DANS LA FIBRE
-  if (gp >= 8 && gp < 18) {
-    const p = P[1];
-    if (p < 0.7) {
-      const t = p / 0.7;
-      const z = lerp(0.6, -58, t * (0.7 + 0.3 * t));
-      camPos.set(mouse.sx * 0.25, mouse.sy * 0.25, z);
-      look.set(mouse.sx * 0.4, mouse.sy * 0.4, z - 10);
-      roll = t * 1.4;
-      for (const f of fibers) {
-        const m = smooth(f.userData.th, f.userData.th + 0.1, p);
-        f.material.color.set(WOOL.ecru).lerp(f.userData.target, m);
-        f.material.emissive.copy(f.userData.target).multiplyScalar(m * 0.35);
-      }
-    } else {
-      // Recul brutal : on ressort de la matière… c'était une bobine.
-      const t = easeOutExpo(range(p, 0.7, 0.86));
-      const d = lerp(0.9, 8.5, t);
-      const side = lerp(0.3, 0.9, range(p, 0.86, 1));
-      camPos.copy(SP).add(V(side + mouse.sx * 0.3 * t, 0.3 + mouse.sy * 0.2 * t, d));
-      look.copy(SP).add(V(lerp(0.5, 0, t), 0, 0));
-    }
-  }
+  // ================= 01 → 03 début — FILM (vidéos Flow)
+  updateFilm(gp);
 
   // ================= 03 — L'EXPLOSION
   if (spoolWorld.visible) {
-    const p = gp < 18 ? 0 : P[2];
+    const p = range(gp, EXPLO.a, EXPLO.b);
     const pr = Math.min(p, 0.58); // figé entre 0,58 et 0,60
     const e = easeOutExpo(range(p, 0.6, 0.86));
     spools.forEach((s, i) => {
@@ -605,7 +562,7 @@ function frame(now) {
       });
       threadMesh.instanceMatrix.needsUpdate = true;
     }
-    if (gp >= 18) {
+    {
       if (p < 0.6) {
         const a = 0.55 * Math.sin(Math.PI * range(p, 0, 0.6));
         const d = 8.5 + 5 * smooth(0.1, 0.5, p);
@@ -792,10 +749,7 @@ function frame(now) {
   if (roll) camera.rotateZ(roll);
 
   // ================= voile de transition
-  let vc = '#0B0A09', vo = 0;
-  vo = Math.max(vo, 0.95 * (1 - Math.abs(gp - 8) / 0.45));
-  const at15 = SCENES[1].a + 0.7 * (SCENES[1].b - SCENES[1].a);
-  if (Math.abs(gp - at15) < 0.4) { vc = '#F5EEE2'; vo = 0.7 * (1 - Math.abs(gp - at15) / 0.4); }
+  let vc = '#EEE9E1', vo = 0;
   if (Math.abs(gp - 30) < 0.8) { vc = '#EEE9E1'; vo = 1 - Math.abs(gp - 30) / 0.8; }
   veil.style.background = vc; veil.style.opacity = clamp(vo);
 
@@ -823,7 +777,7 @@ function frame(now) {
   hud.pct.textContent = `${gp.toFixed(1)} %  ·  p ${P[si].toFixed(2)}${cfg.interactive ? '  ·  CONFIG' : ''}`;
   hud.cursor.style.left = `${gp}%`;
 
-  if (gp < 77.3 || cfg.interactive) renderer.render(scene, camera);
+  if ((gp >= EXPLO.a - 0.5 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 

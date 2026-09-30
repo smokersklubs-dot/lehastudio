@@ -1,6 +1,6 @@
 # Prototype gris — film interactif
 
-Prototype de rythme de l'accueil, fidèle au [storyboard v0.2](../STORYBOARD.md). Les 10 scènes existent avec leur vraie longueur de scroll (1 600 vh), leur caméra et leurs interactions, mais avec des formes simples à la place des vrais assets.
+Prototype de rythme de l'accueil, fidèle au [storyboard v0.2](../STORYBOARD.md). Les 10 scènes existent avec leur vraie longueur de scroll (2 000 vh), leur caméra et leurs interactions. **0 → 21 %** : les vraies vidéos Flow V01 → V04, lues au rythme du scroll (`media/`). Le reste utilise encore des formes simples à la place des vrais assets.
 
 **But : valider le rythme et l'enchaînement avant de payer un tournage ou de la 3D finale.**
 
@@ -29,8 +29,8 @@ Puis ouvrir http://localhost:8765.
 
 | Élément du prototype | Sera remplacé par |
 |---|---|
-| Filament, fibres, bobines en géométrie simple + texture laine procédurale | Modèles et shaders de fibre (phase 2) |
-| Pistolet en boîtes | Modèle glTF modélisé d'après le vrai pistolet |
+| Envol + explosion des bobines en 3D simple (21 → 30 %) | Vidéos Flow V05 et V06 |
+| Toile + pistolet en boîtes (30 → 43 %) | Vidéos Flow V07 → V10 |
 | Motif « Arcade » inventé (fond, arche, arche intérieure, soleil, socle) | Vectorisation réelle d'Arcade, zone par zone |
 | Œuvres Cubix, Vortex, Strates, Delta : formes évoquant | Photos HD + reliefs des vraies œuvres |
 | Couleurs | Références exactes des laines |

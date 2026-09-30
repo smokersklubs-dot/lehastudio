@@ -1,21 +1,22 @@
 :root {
-  --noir: #0B0A09;
   --ecru: #EEE9E1;
   --encre: #1E1C1A;
   --ui: rgba(238, 233, 225, .72);
   --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--noir); }
-body { font-family: var(--font); color: var(--ecru); background: var(--noir); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+html { background: var(--ecru); }
+body { font-family: var(--font); color: var(--ecru); background: var(--ecru); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-#track { height: 1600vh; }
+#track { height: 2000vh; }
 #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-#veil { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
+#film { position: fixed; inset: 0; z-index: 1; pointer-events: none; will-change: transform; }
+#film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+#veil { position: fixed; z-index: 2; inset: 0; pointer-events: none; opacity: 0; }
 
 /* Éléments pilotés par la timeline : invisibles tant que main.js ne les allume pas */
 [data-in], [data-out] { opacity: 0; visibility: hidden; }
@@ -29,13 +30,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 #skip, #sound { position: fixed; bottom: 18px; z-index: 20; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; opacity: .5; mix-blend-mode: difference; color: #fff; }
 #skip { left: 24px; }
 #sound { right: 24px; opacity: .35; visibility: visible; }
-#hint { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: rgba(238,233,225,.45); z-index: 5; }
+#hint { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: rgba(30,28,26,.5); z-index: 5; }
 #hint span { display: block; margin-top: 8px; animation: bob 2s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(6px); } }
 
 /* ---------- textes ---------- */
 .t { position: fixed; z-index: 10; pointer-events: none; text-align: center; left: 0; right: 0; }
-.t-title { top: 50%; transform: translateY(-50%); font-size: 11px; letter-spacing: .45em; line-height: 2; mix-blend-mode: difference; color: #fff; }
+.t-title { top: 22%; font-size: 11px; letter-spacing: .45em; line-height: 2; color: var(--encre); }
 .t-flash { top: 50%; transform: translateY(-50%); font-size: clamp(28px, 6.4vw, 108px); font-weight: 800; letter-spacing: -.02em; line-height: .95; padding: 0 16px; color: #fff; mix-blend-mode: difference; }
 .t-tac { bottom: 16vh; font-size: 13px; letter-spacing: .5em; color: var(--encre); }
 .big { top: 50%; transform: translateY(-50%); font-size: clamp(32px, 7vw, 112px); font-weight: 800; letter-spacing: -.02em; color: #fff; }
