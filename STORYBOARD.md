@@ -1,480 +1,353 @@
-# MARINA LEHACAUT STUDIO — Storyboard de l'expérience d'accueil
+# MARINA LEHACAUT STUDIO — Storyboard du film interactif
 
-> Document de travail. Il sert de cahier des charges pour le design (DA, assets à produire) et pour le développement (chorégraphie du scroll, scènes 3D, perf).
-> Version 0.1 — à valider avec Marina avant toute ligne de code.
+> Cahier des charges créatif et technique de l'accueil.
+> **v0.2** — l'accueil est pensé comme un film interactif, et plus comme une suite de sections. Remplace la v0.1.
+> Prototype « gris » correspondant : [`prototype/`](prototype/).
 
 ---
 
-## 0. Règles du jeu
+## 0. Le concept
 
-### 0.1 Le rythme
+> Le visiteur entre dans un fil de laine. Il traverse la matière et la couleur. Il assiste à la naissance d'une œuvre. Il découvre qu'il peut l'acquérir ou la transformer. À la fin du voyage, il découvre qu'il peut lui-même prendre le tufting gun.
 
-L'accueil alterne les tensions. Chaque scène a une **intensité** (0 = vide, 5 = explosion). Il ne doit jamais y avoir deux pics d'affilée.
+### 0.1 La colonne vertébrale
+
+Chaque animation raconte une étape du processus de Marina. Si un effet ne correspond à aucun maillon de cette chaîne, il est retiré.
+
+```
+FIBRE → FIL → COULEUR → GESTE → FORME → ŒUVRE → PERSONNALISATION → MAIN → TRANSMISSION
+  │       │       │        │       │       │            │              │          │
+ 01      01      02       03      04      04/05         06             07         08
+```
+
+C'est une **transformation continue de la matière**, pas une suite de tableaux. Aucune coupe franche avant la scène 07, où la coupe est justement le sens du moment (on quitte le rêve pour le réel).
+
+### 0.2 Le rythme
 
 ```
 intensité
-5 |            ███                                   
-4 |          ██   █                                  
-3 |        ██      █         ███          ██         
-2 |     ███         █      ██   ██      ██  ██       
-1 |  ███             ██  ██       ██  ██      ██     
-0 |██                  ██           ██          ████ 
-  +--------------------------------------------------
-   INTRO  FIL   EXPLOSION  GESTE ARCADE  ŒUVRES  CRÉER  ATELIERS
-   calme  matière   pic    calme  révél.  calme  jeu    chaleur
+5 |              ▲ WOW 1                  ▲ WOW 2
+4 |             ███                      ███
+3 |           ██   █        ███        ██   █
+2 |      ████       █     ██   ███   ██      █   ██    ██
+1 |   ██             █  ██        ███         ███  ████  ██
+0 |███                ██                                   ███
+  +-----------------------------------------------------------
+   VIDE  FIBRE  EXPLOSION  GESTE  ARCADE  GALERIE  CASSER  RÉEL  ATELIER  STUDIO
+   0     8      18         30     43      55       67      77    86       94   100 %
 ```
 
-Le luxe vient du contraste : le **vide** avant et après l'explosion est aussi important que l'explosion elle‑même.
+Deux « WOW » seulement : l'explosion (02) et l'œuvre qui se casse (06). Tout le reste est au service de ces deux moments.
 
-### 0.2 Les couleurs viennent des œuvres
+### 0.3 Le désir avant la vente
 
-Aucune couleur « décorative » inventée pour le site. On extrait une palette par œuvre (Arcade, Cubix, Vortex…) à partir des photos HD et des références de laine réellement utilisées. Chaque scène pioche dans ces palettes.
+Pendant **43 % du parcours, rien n'est à vendre**. Le premier élément commercial (« ARCADE Nº01 — Découvrir la pièce ») n'apparaît qu'à 50 %. C'est voulu : le produit est la récompense du voyage.
 
-→ **Action Marina** : fournir, pour chaque œuvre, la liste des laines (marque + référence couleur) ou à défaut des photos à la lumière du jour.
+### 0.4 Les quatre types d'assets
 
-### 0.3 Les garde‑fous (non négociables)
+| Type | Rôle | Scènes |
+|---|---|---|
+| **WebGL / 3D** (Three.js) | Filament, fibres, bobines, explosion, toile, œuvres flottantes, galerie | 01 → 06 |
+| **GSAP** | Caméra virtuelle, textes, transitions, tout ce qui suit le scroll | toutes |
+| **Vraies vidéos** | Mains, tufting, colle, découpe, rasage, atelier | 07, 08 |
+| **Images HD** | Œuvres finales, fiches produit, e-commerce | 04 → 06, pages produit |
+
+Pas de vidéo générée par IA. La 3D crée le rêve, la vidéo réelle crée la confiance.
+
+### 0.5 Garde-fous (non négociables)
 
 | Sujet | Règle |
 |---|---|
-| Visiteur pressé | Bouton **« Passer l'intro »** visible dès la 1re seconde, et saut automatique vers la galerie pour un visiteur qui revient (mémorisé localement). |
-| Navigation | Petit monogramme **MLS** en haut à gauche + menu + panier, toujours présents, discrets (opacité 60 %). On ne prend jamais le visiteur en otage. |
-| SEO | Le `<h1>` « Marina Lehacaut Studio — tapis et œuvres tuftées à la main » et un texte de présentation existent dans le HTML dès le chargement (visuellement révélés plus tard). Les pages œuvres et ateliers sont des pages classiques, rendues côté serveur. |
-| Accessibilité | `prefers-reduced-motion` → version « éditoriale » : mêmes contenus, images fixes, fondus simples, aucune caméra. Tout le texte reste lisible sans WebGL. |
-| Son | Coupé par défaut. Icône son en bas à droite. Activé seulement sur action volontaire. |
-| Mobile | Mêmes 6 scènes, mais vidéos pré‑rendues à la place du temps réel 3D quand le GPU est faible (détection au chargement). |
-| Performance | Premier affichage utile < 2,5 s en 4G. La 3D se charge **après** l'écran d'ouverture, scène par scène. |
-
-### 0.4 Unités
-
-- La page d'accueil est un long parcours scrollé. Sa longueur est exprimée en **vh** (1 vh = une hauteur d'écran).
-- Les pourcentages ci‑dessous sont la **progression globale** du scroll de l'accueil (0 % = haut, 100 % = pied de page).
-- Chaque scène a aussi sa progression locale `p` de 0 → 1, utilisée par l'animation.
+| **Visiteur pressé** | Pas de menu au début (c'est voulu), mais un lien minuscule **« Passer »** en bas à gauche + touche Échap. Un visiteur qui revient arrive directement à la scène 06, la galerie (mémorisé localement). |
+| **Menu** | Invisible de 0 à 8 %. Le monogramme apparaît avec le titre (≈ 6 %), le menu complet et le panier à 43 %, au moment où le commerce commence. |
+| **Le scroll ne bloque jamais** | La personnalisation (scène 06) est *jouable* pendant le scroll, mais n'est jamais obligatoire : continuer à scroller fait avancer le film. Le configurateur complet vit sur sa propre page. |
+| **SEO** | Le titre, la présentation du studio et les liens vers les œuvres et ateliers existent dans le HTML dès le chargement. Les pages œuvres/ateliers sont des pages classiques rendues côté serveur. |
+| **Accessibilité** | `prefers-reduced-motion` → version « éditoriale » : mêmes textes et images, fondus simples, pas de caméra. |
+| **Son** | Coupé par défaut, icône en bas à droite. |
+| **Mobile** | Les interactions souris deviennent : inclinaison du téléphone (si autorisée) ou toucher-glisser. La 3D baisse en densité (moins de fibres, pas de post-process) ; sous un certain niveau de GPU, les scènes 01–02 passent en vidéo pré-rendue. |
+| **Performance** | Premier affichage < 2,5 s en 4G. La scène 00 est légère ; le reste se charge pendant que le visiteur regarde le filament. |
 
 ---
 
-## 1. Vue d'ensemble — la timeline
+## 1. Timeline
 
-| Scène | Plage globale | Longueur | Intensité | Technique principale | But |
-|---|---|---|---|---|---|
-| 00 — Ouverture | avant scroll | 0 vh | 0 | HTML/CSS | Charger, poser le silence |
-| 01 — Le fil | 0 → 14 % | 200 vh | 1 → 3 | Vidéo macro scrubbée + shader | Entrer dans la matière |
-| 02 — L'explosion | 14 → 30 % | 240 vh | 3 → 5 → 1 | Three.js (bobines + fils) | Signature du site |
-| 03 — Le geste | 30 → 46 % | 240 vh | 1 → 3 | WebM transparent + canvas/shader | Montrer le savoir‑faire |
-| 03b — Révélation | 46 → 52 % | 90 vh | 3 | HTML + shader relief | Arcade + nom du studio |
-| 04 — Les œuvres | 52 → 70 % | 280 vh | 1 → 2 | Galerie horizontale WebGL | Entrer dans le commerce |
-| 05 — Créez la vôtre | 70 → 86 % | 220 vh | 2 → 3 | Configurateur (SVG/WebGL) | Personnalisation |
-| 06 — Les ateliers | 86 → 100 % | 220 vh | 2 → 1 | Photos flottantes (CSS 3D) | Vendre les ateliers |
-| Pied de page | après 100 % | — | 0 | HTML | Contact, newsletter, légal |
+Longueur totale de l'accueil : **≈ 1 600 vh** (16 hauteurs d'écran). Les pourcentages sont la progression globale du scroll.
 
-Total ≈ **1 490 vh** de parcours. C'est long : c'est pourquoi le bouton « Passer l'intro » et le menu permanent sont obligatoires.
-
----
-
-## 2. Storyboard scène par scène
-
-### SCÈNE 00 — OUVERTURE (avant tout scroll)
-
-**Ce que voit le visiteur**
-
-```
-┌──────────────────────────────────────────────┐
-│ MLS                                   ☰   ◯ │   ← nav discrète
-│                                              │
-│                                              │
-│                                              │
-│                      │                       │   ← un seul fil, vertical,
-│                      │                       │     qui respire (ondule à peine)
-│                      │                       │
-│                                              │
-│                                              │
-│                 faites défiler               │   ← apparaît après 2,5 s
-│                      ↓                       │
-│ Passer l'intro                          🔇  │
-└──────────────────────────────────────────────┘
-fond #0E0D0C (noir chaud, pas noir pur)
-```
-
-| Temps | Événement |
-|---|---|
-| 0 s | Écran noir chaud. Nav à 0 %. |
-| 0,3 s | Le fil se dessine de haut en bas (tracé SVG, 1,2 s, easing `power2.out`). Couleur : le fil dominant d'Arcade. |
-| 1,5 s | Le fil commence à onduler (bruit très lent, amplitude 2 px). |
-| 1,5 s | Nav + « Passer l'intro » + icône son apparaissent (fondu 0,6 s). |
-| 2,5 s | « faites défiler ↓ » apparaît. Si aucun scroll après 6 s, la flèche fait un petit rebond. |
-| en fond | Préchargement de la vidéo de la scène 01 et de la scène 3D 02. |
-
-**Technique** : 100 % HTML/SVG, zéro WebGL. C'est ce qui garantit un affichage instantané.
+| # | Scène | Plage | vh | Maillon | Technique | Commerce |
+|---|---|---|---|---|---|---|
+| 01 | Le vide | 0 → 8 % | 130 | Fibre | WebGL (1 filament) | — |
+| 02 | Entrer dans la fibre | 8 → 18 % | 160 | Fil, couleur | WebGL (fibres) | — |
+| 03 | L'explosion | 18 → 30 % | 190 | Couleur | WebGL (bobines, fils) | — |
+| 04 | Le geste | 30 → 43 % | 210 | Geste | WebGL + objet 3D pistolet | — |
+| 05 | Arcade naît | 43 → 55 % | 190 | Forme, œuvre | WebGL + image HD | **1re apparition** |
+| 06 | La galerie impossible | 55 → 67 % | 190 | Œuvre | WebGL (architecture) | Œuvres cliquables |
+| 07 | Casser l'œuvre | 67 → 77 % | 160 | Personnalisation | WebGL + UI | **Configurateur** |
+| 08 | Du digital au réel | 77 → 86 % | 150 | Main | Vraie vidéo | Réassurance |
+| 09 | L'atelier | 86 → 94 % | 130 | Transmission | Vidéo + UI | **Ateliers** |
+| 10 | Le studio | 94 → 100 % | 100 | — | HTML | Navigation normale |
 
 ---
 
-### SCÈNE 01 — LE FIL (0 → 14 %)
+## 2. Scène par scène
 
-Intention : on ne regarde pas le fil, **on entre dedans**.
+Pour chaque scène, `p` est la progression locale de 0 à 1.
 
-| p (local) | Caméra | Image | Texte |
-|---|---|---|---|
-| 0,00 | Plan fixe | Le fil SVG de l'ouverture est remplacé (fondu enchaîné) par la vidéo macro du même fil, parfaitement alignée. | — |
-| 0,10 | Zoom avant lent | On distingue les fibres, le duvet de la laine, la torsion. | **FIL.** apparaît (lettres qui se « tissent » : chaque lettre monte depuis une ligne) |
-| 0,25 | Zoom continue | Le fil se détord : il se sépare en 3 brins. | **FIL.** disparaît vers le haut |
-| 0,40 | Traversée | On passe *entre* les brins. Chaque brin prend une couleur d'œuvre. | **COULEUR.** |
-| 0,60 | Travelling latéral | Les 3 brins deviennent 12, puis des dizaines, qui ondulent. | **COULEUR.** sort · **MOUVEMENT.** entre |
-| 0,80 | Recul | Les fibres remplissent tout l'écran : une matière textile vivante. | **MOUVEMENT.** sort |
-| 1,00 | — | Écran rempli de fibres colorées → transition vers 02 | — |
-
-**Transition 01 → 02** : les fibres qui remplissent l'écran se « rembobinent » vers le centre et forment la première bobine 3D. (Shader de dissolution : l'image vidéo se transforme en particules qui convergent.)
-
-**Technique**
-- Vidéo macro tournée pour de vrai (pas de 3D ici : rien ne rendra mieux la vraie laine qu'une vraie caméra macro).
-- Encodée avec **une image clé par frame** pour pouvoir la scrubber au scroll sans saccade (ou découpée en séquence d'images WebP si le scrub vidéo reste instable sur Safari).
-- Les mots en HTML par‑dessus (`mix-blend-mode: difference` pour rester lisibles).
-
-**Assets à produire**
-- Plan macro 1 : un fil unique, zoom lent vers la fibre (10 s, 4K, fond noir).
-- Plan macro 2 : 3 brins qui se détordent (10 s).
-- Plan macro 3 : dizaines de fils de couleurs d'œuvres qui bougent (10 s).
-
----
-
-### SCÈNE 02 — L'EXPLOSION (14 → 30 %)
-
-Intention : c'est la **signature** du site. Le seul vrai pic d'intensité de l'accueil.
-
-```
-p 0,0          p 0,3              p 0,55                p 0,7               p 1,0
-                                    
-    ◉            ◉   ◉          ◉ ◉  ◉ ◉ ◉          ╲  │  ╱ ─── ~~         LA COULEUR
-               ◉   ◉   ◉       ◉  ◉ ◉  ◉ ◉ ◉     ── ~~ ✺ ~~ ──             PREND FORME.
-                 ◉   ◉          ◉ ◉ ◉ ◉  ◉          ╱  │  ╲  ~~ ───          
- 1 bobine     10 bobines      30 bobines,        explosion de fils,       fils qui retombent
- qui tourne   qui flottent    accélération       traversent l'écran       lentement, calme
-```
-
-| p | Caméra | Scène 3D | Texte / son |
-|---|---|---|---|
-| 0,00 | Face, proche | Une bobine, née de la transition, tourne lentement sur elle‑même. Lumière rasante (on sent la texture). | — |
-| 0,15 | Recul doux | Une 2e bobine apparaît, puis une 3e… | — |
-| 0,30 | Recul + légère orbite | 10 bobines flottent en apesanteur, chacune d'une couleur d'œuvre. Un fil relie certaines d'entre elles. | — |
-| 0,45 | Orbite plus rapide | 30 bobines. Elles accélèrent, tournent de plus en plus vite. Léger flou de mouvement. | (son) grondement textile qui monte |
-| 0,55 | **Arrêt net 0,2 s** | Tout se fige une fraction de seconde. Silence. | Silence |
-| 0,60 | Secousse de caméra | 💥 Les bobines se déroulent d'un coup : des centaines de fils colorés partent dans toutes les directions, traversent l'écran, passent *devant* la caméra. | (son) « whoosh » de laine |
-| 0,75 | Ralenti | Les fils ralentissent, flottent comme sous l'eau. | — |
-| 0,85 | Stabilisation | Les fils retombent doucement et s'organisent en lignes horizontales parallèles — comme une trame. | **LA COULEUR PREND FORME.** (grand, centré) |
-| 1,00 | Fond passe au clair | La trame devient la toile de la scène 03. Le noir bascule en écru (#EFEAE2). | Le texte sort |
-
-**Technique**
-- Three.js / React Three Fiber, une seule scène, chorégraphiée par GSAP ScrollTrigger (la timeline est « scrubbée » : le visiteur contrôle la vitesse, peut revenir en arrière).
-- Bobines : un modèle 3D léger (≈ 3 000 triangles) instancié (`InstancedMesh`) avec une texture de laine normal map + couleur par instance.
-- Fils : courbes (`TubeGeometry` ou lignes épaisses en shader) animées sur GPU. Cible : 400 fils max desktop, 120 mobile.
-- Bloom très léger en post‑process uniquement pendant l'explosion (coût GPU).
-- **Fallback** (GPU faible / mobile ancien) : vidéo pré‑rendue de la même scène, scrubbée.
-
-**Assets à produire**
-- Modèle 3D de bobine (cône de laine industriel) + textures.
-- Palette RVB exacte de chaque œuvre.
-- 2 sons : montée textile, « whoosh » d'explosion (optionnels).
-
----
-
-### SCÈNE 03 — LE GESTE (30 → 46 %)
-
-Intention : **tout se calme**. Fond clair, beaucoup de vide. On montre la main de l'artiste à travers son outil.
+### 01 — LE VIDE (0 → 8 %)
 
 ```
 ┌──────────────────────────────────────────────┐
 │                                              │
-│      ┌──────────────────────────────┐        │
-│      │ ════════════                 │        │   toile tendue (vue de face)
-│      │ ════════════════════         │        │   les lignes de laine s'accumulent
-│      │ ═══════                      │        │
-│      │                  🔫 ←        │        │   tufting gun détouré qui avance
-│      │                              │        │
-│      └──────────────────────────────┘        │
 │                                              │
-│     De milliers de fils naît une pièce unique.│
+│                                              │
+│                      ·~                      │  ← un filament minuscule
+│                                              │
+│                                              │
+│                                              │
+│ passer                                   🔇  │
 └──────────────────────────────────────────────┘
-fond écru #EFEAE2
+fond #0B0A09 — noir chaud
 ```
+
+| p | Caméra | Image | Texte |
+|---|---|---|---|
+| avant scroll | Fixe, très loin | Un filament de laine de 2–3 cm à l'écran, légèrement ondulant. La souris le fait onduler un peu plus (réaction lente, comme dans l'eau). | — |
+| 0,0 → 0,6 | Travelling avant lent | Le filament grandit, remplit l'écran. On découvre la torsion, le duvet, les fibres qui dépassent. Lumière rasante. | — |
+| 0,6 → 0,9 | Continue | Le filament occupe tout l'écran, en diagonale. | **MARINA LEHACAUT / STUDIO** apparaît, **très petit** (11 px, lettres espacées), centré. |
+| 0,9 → 1 | Accélère légèrement | On fonce vers la surface du filament. | Le titre s'efface. |
+
+**Interaction** : la souris déplace le filament de quelques pixels (ressort amorti). Sur mobile : inclinaison.
+**Technique** : courbe 3D + shader de fibre (torsion + duvet en particules). Pas de vidéo ici : le filament doit réagir à la souris.
+
+### 02 — ENTRER DANS LA FIBRE (8 → 18 %)
+
+| p | Caméra | Image |
+|---|---|---|
+| 0,0 → 0,3 | Traverse la surface | On passe *entre* les fibres : des dizaines de filaments en tube autour de la caméra, crème/écru. |
+| 0,3 → 0,7 | Travelling continu, rotation lente sur l'axe | Les fibres deviennent abstraites (plus lisses, plus lumineuses) et prennent couleur une à une : **rouge → orange → bleu → rose → jaune** (couleurs réelles des laines d'Arcade, Cubix, Vortex). La couleur envahit l'espace. |
+| 0,7 → 0,85 | **Recul brutal** (0,15 de p pour une grande distance, easing sec) | On ressort de la matière… |
+| 0,85 → 1 | Stabilisé | … et on découvre que tout ce fil sort d'**une bobine**, qui flotte seule dans le noir. |
+
+**Transition vers 03** : la bobine découverte *est* la première bobine de l'explosion. Aucune coupe.
+
+### 03 — L'EXPLOSION (18 → 30 %) — WOW 1
 
 | p | Image | Texte / son |
 |---|---|---|
-| 0,00 | Toile blanche tendue sur cadre, vue de face, légère perspective. Le tufting gun flotte à droite, immobile. | — |
-| 0,10 | Le pistolet se met à vibrer et avance vers la toile. | (son) moteur du pistolet |
-| 0,15 | 1re ligne : le pistolet traverse la toile de droite à gauche. Derrière lui, une ligne de laine apparaît, avec son relief. | TAC‑TAC‑TAC (synchronisé au scroll) |
-| 0,30 | 2e ligne, 3e ligne. On reconnaît des blocs de couleur. | — |
-| 0,50 | Le rythme s'accélère : les passages deviennent plus rapides, plusieurs zones se remplissent. | — |
-| 0,75 | Le motif d'**Arcade** est reconnaissable à 80 %. | **De milliers de fils naît une pièce unique.** |
-| 0,90 | Le pistolet sort du cadre. Les derniers vides se comblent tout seuls. | Son s'arrête. Silence. |
-| 1,00 | Motif complet, vu *de face*. | — |
+| 0,00 | 1 bobine, rotation lente. | — |
+| 0,15 | 3 bobines. | — |
+| 0,30 | 10 bobines, en apesanteur, orientations variées. Le scroll les fait tourner, la souris décale doucement tout le nuage. | — |
+| 0,45 | 30 bobines. La rotation accélère. | (son) montée textile |
+| 0,58 | **Figé, 0,2 s**. | Silence |
+| 0,60 | 💥 Les bobines sont projetées hors du centre. Des centaines de fils se déroulent et traversent l'écran. | (son) souffle |
+| 0,65 → 0,80 | **La caméra traverse l'explosion** (avance au milieu des fils qui passent devant elle). | **LA COULEUR N'A PAS DE LIMITES.** — une fraction de seconde (≈ 0,08 de p), plein écran. |
+| 0,80 → 1 | Les fils ralentissent, s'éloignent, disparaissent. Fond qui s'éclaircit. | **Silence visuel.** |
 
-**Technique**
-- Le **pistolet** : vidéo WebM avec transparence (HEVC alpha pour Safari), tournée sur fond vert puis détourée. Plus crédible et bien moins cher qu'un modèle 3D animé.
-- Le **tapis qui se construit** : l'image HD d'Arcade est révélée par un **masque** qui suit le trajet du pistolet (shader : le masque est une texture qu'on « peint » ligne par ligne selon `p`). Une normal map donne le relief de la laine.
-- Le trajet du pistolet est défini une fois pour toutes (liste de lignes) pour que pistolet et révélation soient parfaitement synchronisés.
+**Technique** : `InstancedMesh` pour les bobines (modèle ≈ 3 000 triangles, normal map laine), fils en courbes animées sur GPU (400 desktop / 120 mobile). Bloom léger uniquement autour de 0,6.
 
-**Assets à produire**
-- Tournage : pistolet de tufting en action, fond vert, caméra fixe, 3 à 4 passages.
-- Photo d'Arcade parfaitement de face, lumière rasante (pour la normal map) + lumière diffuse (pour la couleur).
-- Enregistrement son du pistolet (optionnel).
+### 04 — LE GESTE (30 → 43 %)
 
----
+```
+                 ┌──────────────────────────────────┐
+                 │ ═══════════════                  │
+                 │ ════════════════════════         │  toile immense, blanche
+                 │                                  │
+                 │                         ▟▀▀▙     │  le pistolet, objet 3D
+                 │                           ▐      │
+                 └──────────────────────────────────┘
+                          ✦ ✦  ✦                       fibres qui suivent la souris
+fond écru #EEE9E1
+```
 
-### SCÈNE 03b — RÉVÉLATION : ARCADE (46 → 52 %)
+| p | Caméra | Image | Son |
+|---|---|---|---|
+| 0,00 | Face à la toile, grand angle | Une toile immense, blanche, tendue. Rien dessus. | — |
+| 0,10 → 0,30 | **Orbite lente** (≈ 15°) | Le tufting gun **entre lentement dans le cadre comme un objet dans l'espace** : il avance en profondeur, pivote, la lumière glisse sur lui. | — |
+| 0,35 | Revient face | 1re ligne. | TAC. |
+| 0,50 | — | 2e ligne. | TAC TAC TAC. |
+| 0,60 → 1 | Se rapproche peu à peu | 3e ligne, puis le rythme accélère. | TAC TAC TAC TAC… |
 
-Intention : le moment « générique ». Le nom du studio n'apparaît **qu'ici**.
+**Participation du visiteur** : autour du curseur, quelques fibres libres flottent et suivent le mouvement avec retard, puis se déposent près de la ligne en cours. Le visiteur ne dessine **pas** : il a juste l'impression d'accompagner la naissance.
+
+**Technique** : pistolet = **modèle 3D** (glTF, ≈ 15 000 triangles) puisqu'il doit tourner dans l'espace. Lignes = bandes de laine générées (géométrie + normal map). Les lignes tracées ici *sont* les premières lignes du motif d'Arcade.
+
+### 05 — ARCADE NAÎT (43 → 55 %)
 
 | p | Image | Texte |
 |---|---|---|
-| 0,00 | Arcade occupe 60 % de l'écran. | — |
-| 0,30 | La caméra avance : Arcade remplit tout l'écran. La souris fait bouger la lumière → on sent le relief de la laine. | — |
-| 0,55 | Arcade s'assombrit légèrement (voile 30 %). | **MARINA LEHACAUT STUDIO** (grand, lettres qui se posent une à une) |
-| 0,70 | — | *Architecture visuelle des émotions.* |
-| 0,85 | — | **ENTRER** (bouton, cercle qui se remplit au survol) |
-| 1,00 | Arcade recule et se range comme la **première œuvre** de la galerie → la scène 04 commence sans coupure. | — |
+| 0,00 → 0,20 | **Forme 1** — le pistolet trace la première grande forme d'Arcade (en blanc cassé, sans couleur). | — |
+| 0,20 → 0,40 | **Forme 2** — les autres formes géométriques. Le motif est lisible, encore monochrome. | — |
+| 0,40 → 0,55 | **Couleur** — les zones prennent leurs vraies couleurs, une par une. | — |
+| 0,55 → 0,70 | **Volume** — la laine gonfle (relief), la caméra se rapproche : on voit les fibres. | — |
+| 0,70 → 0,85 | Recul. Le pistolet et la toile disparaissent. **Arcade, terminé, flotte**, très grand, fond extrêmement sobre. | — |
+| 0,85 → 1 | Arcade reste. Carte discrète en bas à gauche : | **ARCADE Nº01** · Œuvre textile · 51 × 51 cm · **Découvrir la pièce →** |
 
-« ENTRER » fait défiler automatiquement jusqu'à la galerie. Continuer à scroller fait la même chose.
+Le menu complet et le panier apparaissent ici (première apparition du commerce).
 
----
+**Technique** : le motif d'Arcade est reconstruit en **zones vectorielles** (mêmes fichiers que le configurateur) : chaque zone = une forme extrudée, texture laine + relief. C'est ce qui permet ensuite de le casser en 07. Pour la version finale « terminée », on superpose l'image HD réelle (fondu) : la 3D construit, la photo prouve.
 
-### SCÈNE 04 — LES ŒUVRES (52 → 70 %)
+### 06 — LA GALERIE IMPOSSIBLE (55 → 67 %)
 
-Intention : **on entre dans le commerce, sans grille Shopify**. Une galerie d'exposition.
+| p | Caméra | Image |
+|---|---|---|
+| 0,00 → 0,20 | Recul large | Arcade glisse sur le côté. On découvre qu'il flottait dans une **architecture** : arches, cubes, plans suspendus, escaliers qui ne mènent nulle part — construits à partir des formes des œuvres elles-mêmes. |
+| 0,20 → 0,45 | Le scroll fait **avancer** la caméra dans l'espace | **CUBIX** apparaît, suspendu dans un cadre cubique. |
+| 0,45 → 0,70 | Virage | **VORTEX**, au centre d'une spirale de plans. |
+| 0,70 → 1 | Continue | Les autres œuvres. Puis la caméra remonte et revient face à Arcade. |
 
-```
-┌──────────────────────────────────────────────┐
-│ MLS            ŒUVRES · ATELIERS · STUDIO  ◯ │
-│                                              │
-│   ▯        ┌──────────────────┐        ▯     │   œuvre précédente / suivante
-│   ▯        │                  │        ▯     │   (petites, floutées, en profondeur)
-│   ▯        │      ARCADE      │        ▯     │
-│   ▯        │                  │        ▯     │
-│            └──────────────────┘              │
-│   ARCADE                    Pièce unique     │
-│   90 × 90 cm · laine        1 400 €          │   (prix : exemple, à confirmer)
-│                                              │
-│   ◀  01 / 06  ▶           Glisser  ⟷         │
-└──────────────────────────────────────────────┘
-```
+**Interaction** : survol d'une œuvre → elle se tourne légèrement vers le visiteur, son nom + « pièce unique / personnalisable » + prix apparaissent. Clic → zoom dans l'œuvre → fiche produit.
 
-| p | Événement |
+**Couleurs** : l'architecture est monochrome (écru, gris chaud). Seules les œuvres sont en couleur.
+
+### 07 — CASSER L'ŒUVRE (67 → 77 %) — WOW 2
+
+| p | Image | Interface |
+|---|---|---|
+| 0,00 | Face à Arcade. | Un seul bouton : **PERSONNALISER** |
+| 0,05 → 0,30 | Arcade **se sépare** : chaque zone géométrique s'écarte dans l'espace, en profondeur, sans violence (vitesse lente, légère rotation). La caméra passe entre les éléments. | — |
+| 0,30 | Les éléments se stabilisent, en éclaté. | **CHOISISSEZ VOTRE PALETTE** ● ● ● ● ● ● |
+| — | Clic sur une couleur → la zone survolée/sélectionnée prend cette couleur, avec un effet de laine qui se « tufte » (≈ 0,6 s). | — |
+| 0,55 | — | **FORMAT** 51 × 51 · 70 × 70 · 90 × 90 · Sur mesure |
+| — | Changement de format → les éléments s'écartent davantage puis se réassemblent à la nouvelle échelle (repère d'échelle discret). Prix mis à jour. | — |
+| 0,80 | — | **CRÉER MON ARCADE** |
+| 0,85 → 1 | 💥 Toutes les pièces reviennent ensemble, avec les couleurs du visiteur. **Voici son tapis.** | Prix · délai · **Ajouter au panier** / **Continuer dans le configurateur →** |
+
+**Comportement du scroll** : si le visiteur scrolle sans cliquer, le film joue tout seul (Arcade se casse, une palette de démonstration se colore, se réassemble). S'il clique « PERSONNALISER » ou une couleur, le scroll est mis en pause dans cette scène jusqu'à « Créer mon Arcade » ou un bouton « Continuer le voyage ↓ ». **Il n'est jamais bloqué sans sortie visible.**
+
+**Commerce** : « Ajouter au panier » crée une ligne Shopify avec les options (couleurs par zone, format). « Sur mesure » → demande de devis.
+
+### 08 — DU DIGITAL AU RÉEL (77 → 86 %)
+
+**Cut.** Première coupe franche du film. Plein écran, vraie vidéo.
+
+| p | Plan (vraie vidéo macro) |
 |---|---|
-| 0,00 | Arcade est au centre. À droite, à moitié hors écran et en retrait, Cubix attend. |
-| scroll ↓ | La page **ne descend pas** : elle est épinglée et le scroll vertical fait glisser la galerie horizontalement. Drag souris / swipe et flèches clavier fonctionnent aussi. |
-| entre deux œuvres | L'œuvre sortante recule et s'incline légèrement ; l'entrante avance. Le **fond change de teinte** selon la couleur dominante de l'œuvre (très désaturée). |
-| survol | Parallaxe de la lumière sur le relief (même shader que 03b). Le curseur devient un disque « VOIR ». |
-| clic | **Zoom** dans l'œuvre : elle grossit jusqu'à remplir l'écran, on voit les fibres, puis transition vers la fiche produit (l'image reste en place, la fiche se construit autour). |
-| p = 1 | Dernière œuvre + une carte **« Toutes les œuvres → »** (lien vers la page catalogue complète). |
+| 0,00 | La main de Marina (pas de visage). |
+| 0,12 | Le tufting gun qui pique la toile. |
+| 0,25 | La laine, les bobines réelles. |
+| 0,38 | La colle étalée au dos. |
+| 0,50 | La découpe. |
+| 0,62 | Le rasage. |
+| 0,75 | Les fibres qui volent. |
+| 0,88 | Le tapis terminé, retourné. |
 
-**Fiche produit (page à part, `/oeuvres/arcade`)**
-- Haut : l'œuvre plein écran, relief interactif, zoom macro au clic.
-- Puis : nom, dimensions, matière, pièce unique / édition, prix, **Ajouter au panier**.
-- Puis : « L'histoire de l'œuvre » (texte de Marina), photos en situation, vidéo de fabrication si disponible.
-- Si l'œuvre existe en version personnalisable → bloc « Créez la vôtre à partir d'Arcade » vers la scène 05 / configurateur.
+Texte : **FAIT À LA MAIN.** (≈ 0,3) puis **À COLOMBES.** (≈ 0,7).
 
-**Technique**
-- Galerie : un seul canvas WebGL avec des plans texturés (pas une div par œuvre) pour les effets de profondeur, la déformation au glissement et la transition de zoom.
-- Données produits : **Shopify Storefront API** (headless). Les œuvres sont des produits Shopify ; le site ne fait que les afficher.
-- Chaque œuvre a sa page statique générée → bon référencement.
+**Technique** : un montage vidéo unique (≈ 30 s, sans son ou avec son d'atelier optionnel). Le scroll fait avancer le montage (vidéo encodée pour être scrubbée) ; alternative plus légère si le scrub saccade : chaque plan est un clip court qui se lance quand on arrive sur sa plage.
 
----
+### 09 — L'ATELIER (86 → 94 %)
 
-### SCÈNE 05 — CRÉEZ LA VÔTRE (70 → 86 %)
-
-Intention : transformer la personnalisation en **jeu créatif**, pas en formulaire.
-
-Sur l'accueil c'est un **aperçu jouable** ; le configurateur complet vit sur `/creer/arcade`.
-
-```
-┌──────────────────────────────────────────────┐
-│  CRÉEZ LA VÔTRE                              │
-│                                              │
-│  FORMAT            ┌────────────────┐        │
-│  ○ 51 × 51         │                │        │
-│  ● 70 × 70         │    ARCADE      │        │   le tapis flotte, tourne
-│  ○ 90 × 90         │   (vos coul.)  │        │   très légèrement
-│  ○ Sur mesure      │                │        │
-│                    └────────────────┘        │
-│  ZONE  [ A ][ B ][ C ]                       │
-│  PALETTE ● ● ● ● ● ● ● ●                     │
-│                                              │
-│  USAGE   ( Mural | Sol )                     │
-│  [ Voir dans un intérieur ]                  │
-│                                              │
-│  À partir de 690 €        [ Commander → ]    │   (prix : exemple)
-└──────────────────────────────────────────────┘
-```
-
-| Étape (scroll ou clic) | Ce qui se passe |
-|---|---|
-| Entrée | Le tapis arrive en tournant et se pose au centre. Les options apparaissent une par une à gauche. |
-| Format | Le tapis change de taille, avec un repère d'échelle (silhouette d'une chaise ou d'une main) pour que la taille soit concrète. |
-| Zone A → couleur | Clic sur une pastille → la couleur **se propage** dans la zone comme de la laine qui se tufte (même effet de révélation que la scène 03, en 0,6 s). |
-| Zone B, zone C | Idem. Le prix se met à jour en direct. |
-| Mural / Sol | Mural : le tapis se redresse, ombre portée sur un mur. Sol : il bascule à plat, vue en plongée. |
-| Voir dans un intérieur | Le fond se transforme en pièce (3 ambiances photo : salon, chambre, entrée). Le tapis s'y pose en perspective. |
-| Commander | Crée l'article dans le panier Shopify avec les options choisies (propriétés de ligne). Pour « sur mesure » → formulaire de demande de devis. |
-
-**Règles de personnalisation** (à valider avec Marina)
-- Nombre de zones modifiables par modèle (proposition : 3 max, sinon ça devient un logiciel).
-- Palette limitée aux laines réellement disponibles en stock (8 à 12 teintes).
-- Délai de fabrication affiché clairement.
-
-**Technique**
-- Le motif de chaque modèle personnalisable est redessiné en **SVG vectoriel par zones** (une forme = une zone nommée). La couleur change par simple remplissage, puis une texture de laine + relief est appliquée par‑dessus en shader.
-- « Voir dans un intérieur » : photos de pièces avec les 4 coins de l'emplacement pré‑calculés (déformation perspective simple, pas de 3D lourde). Une version AR mobile (modèle USDZ/GLB) peut venir plus tard.
-
-**Assets à produire**
-- Fichiers vectoriels des motifs personnalisables (Arcade en premier).
-- Nuancier photographié des laines disponibles.
-- 3 photos d'intérieurs (libres de droits ou shooting).
-
----
-
-### SCÈNE 06 — LES ATELIERS (86 → 100 %)
-
-Intention : **changement d'univers**. On quitte la galerie, on entre dans l'atelier. Plus chaud, plus humain.
+Changement de point de vue : jusqu'ici *je regarde Marina créer* ; maintenant *je peux créer*.
 
 | p | Image | Texte |
 |---|---|---|
-| 0,00 | Transition : fond qui passe d'écru à un ton chaud (terracotta très clair). Grain photo léger. | — |
-| 0,10 | Des photos/vidéos courtes arrivent comme des **tirages papier** qui flottent dans l'espace, à différentes profondeurs, légèrement inclinés, avec une ombre douce. | — |
-| 0,10 → 0,60 | La caméra **avance à travers** les tirages, dans l'ordre du processus : bobines → toile → mains → tufting gun → découpe → laine au sol → œuvre terminée. Chaque tirage vidéo se lance quand il passe au centre. | Légende manuscrite sous chaque tirage (« 1. choisir ses couleurs »…) |
-| 0,65 | Les tirages s'écartent, laissant un grand vide central. | **CETTE FOIS,** |
-| 0,75 | — | **C'EST VOUS QUI CRÉEZ.** |
-| 0,85 | Infos concrètes : durée, nombre de places, prix, ce qu'on repart avec. | **ATELIERS TUFTING — COLOMBES** |
-| 0,95 | — | [ **Découvrir l'expérience** ] → `/ateliers` · prochaine date disponible affichée à côté du bouton |
-| 1,00 | Pied de page. | — |
+| 0,00 → 0,30 | Vidéo : le tufting gun est **posé** sur l'établi. La caméra s'approche. | — |
+| 0,30 → 0,55 | Transition : **une autre main** (celle d'un·e participant·e) entre dans le cadre et le saisit. | — |
+| 0,55 | — | **À VOUS.** |
+| 0,70 | — | **ATELIERS TUFTING — COLOMBES** |
+| 0,80 | Formules (à définir) : Initiation 2 h · Création 3 h · Atelier privé. | Prochaine date disponible |
+| 0,90 | — | **Découvrir les ateliers →** |
 
-**Technique**
-- CSS 3D (`perspective` + `translateZ`) piloté par GSAP : pas besoin de WebGL ici, c'est plus léger et suffisant.
-- Vidéos courtes (3–5 s) en boucle, muettes, chargées uniquement à l'approche.
-- La prochaine date vient de l'outil de réservation (Shopify produit « atelier » avec dates en variantes, ou outil externe type Calendly/Tipee — à décider).
+### 10 — LE STUDIO (94 → 100 %)
 
-**Assets à produire**
-- Shooting atelier : 7 photos + 7 micro‑vidéos (une par étape), cadrage vertical 4:5.
-- Textes : déroulé d'un atelier, prix, durée, capacité, adresse.
+Silence. Fond clair. Une seule œuvre. Retour à une navigation parfaitement normale.
+
+```
+┌──────────────────────────────────────────────┐
+│                                              │
+│                  ┌──────┐                    │
+│                  │ œuvre│                    │
+│                  └──────┘                    │
+│                                              │
+│             MARINA LEHACAUT                  │
+│                 STUDIO                       │
+│                                              │
+│  ŒUVRES · COLLECTIONS · SUR MESURE ·         │
+│  ATELIERS · LE STUDIO                        │
+│                                              │
+│  Instagram · Pinterest · Contact             │
+└──────────────────────────────────────────────┘
+```
 
 ---
 
-## 3. Le parcours après l'accueil
+## 3. Parcours après l'accueil
 
 ```
-                     ACCUEIL (expérience)
-                            │
-        ┌───────────────────┼────────────────────┐
-        ▼                   ▼                    ▼
-   /oeuvres            /creer/[modèle]        /ateliers
-   pièces uniques      personnalisables       réservation
-        │                   │                    │
-   /oeuvres/[œuvre]         │                    │
-        │                   │                    │
-        └─────────┬─────────┘                    │
-                  ▼                              ▼
-             PANIER (tiroir latéral)  ◄──────────┘
-                  │
-                  ▼
-        Checkout Shopify (paiement, livraison)
+                           ACCUEIL (film)
+                                │
+   ┌──────────┬─────────────┬───┴────────┬─────────────┬──────────┐
+   ▼          ▼             ▼            ▼             ▼          ▼
+/oeuvres  /collections  /sur-mesure   /ateliers    /studio    /contact
+pièces    modèles       devis          réservation
+uniques   personnal.
+   │          │
+/oeuvres/  /creer/[modèle]  ← même scène 3D que la scène 07, en plein écran
+[œuvre]       │
+   └────┬─────┘
+        ▼
+  PANIER (tiroir)  →  Checkout Shopify
 ```
 
-- **/oeuvres** : catalogue complet (la galerie de l'accueil en version navigable + filtre « disponible / vendu / personnalisable »).
-- **/studio** : Marina, la démarche, presse, expositions.
-- **Panier** : tiroir latéral stylé au site. Le **checkout** reste celui de Shopify (sécurité, paiements, TVA) aux couleurs du studio.
-- Les pages intérieures sont **sobres** : l'immersion est concentrée sur l'accueil et sur les transitions. Une fiche produit doit rester rapide et claire.
+Les pages intérieures sont sobres et rapides. L'immersion vit dans l'accueil, dans les transitions et dans le configurateur.
 
 ---
 
 ## 4. Architecture technique
 
-| Couche | Choix | Rôle |
-|---|---|---|
-| Framework | Next.js (App Router) + TypeScript | Pages, rendu serveur, SEO |
-| Scroll fluide | Lenis | Inertie du scroll, synchronisée avec GSAP |
-| Chorégraphie | GSAP + ScrollTrigger | Toutes les timelines, épinglages, scrub |
-| 3D | Three.js via React Three Fiber (+ drei) | Scène 02, galerie 04, relief 03b |
-| Shaders | GLSL maison | Dissolution 01→02, révélation 03, relief laine, fond 04 |
-| Vidéo | MP4/WebM (scrub) + WebM alpha / HEVC alpha | Scènes 01 et 03 |
-| Commerce | Shopify headless (Storefront API) | Produits, variantes, stock, panier, paiement |
-| Contenu | Shopify metafields (ou CMS léger) | Textes des œuvres, histoire, ateliers |
-| Hébergement | Vercel | Déploiement, images optimisées |
-
-**Organisation du code (proposition)**
-
-```
-app/
-  page.tsx                 ← accueil : monte les 6 scènes
-  oeuvres/[slug]/page.tsx
-  creer/[slug]/page.tsx
-  ateliers/page.tsx
-components/experience/
-  ExperienceCanvas.tsx     ← UN seul canvas WebGL partagé par toutes les scènes
-  Scene00Ouverture.tsx
-  Scene01Fil.tsx
-  Scene02Explosion.tsx
-  Scene03Geste.tsx
-  Scene03bRevelation.tsx
-  Scene04Galerie.tsx
-  Scene05Creer.tsx
-  Scene06Ateliers.tsx
-  useScrollScene.ts        ← donne p (0→1) à chaque scène
-  quality.ts               ← détecte le niveau GPU → high / low / reduced-motion
-lib/shopify/               ← requêtes Storefront API
-```
-
-Principe clé : **un seul canvas WebGL** pour tout l'accueil (et non un par scène), chaque scène ne monte ses objets 3D que lorsqu'elle est proche de l'écran.
-
-**Budget performance**
-
-| Élément | Budget |
+| Couche | Choix |
 |---|---|
-| JS initial (avant 3D) | < 150 Ko compressé |
-| Scène 02 (modèle + textures) | < 1,5 Mo |
-| Vidéo scène 01 | < 4 Mo desktop, < 2 Mo mobile |
-| Vidéo pistolet scène 03 | < 2 Mo |
-| Images galerie | AVIF/WebP, chargées à l'approche |
-| Images/seconde | 60 fps desktop, 30 fps minimum mobile |
+| Framework | Next.js (App Router) + TypeScript |
+| Scroll | Lenis (inertie) + GSAP ScrollTrigger (timelines) |
+| 3D | Three.js via React Three Fiber — **un seul canvas** pour tout l'accueil |
+| Shaders | GLSL : fibre, laine/relief, dissolution, explosion |
+| Modèles | glTF compressés (Draco/Meshopt) : bobine, pistolet |
+| Vidéo | MP4 H.264 (scrub, images clés rapprochées) + WebM |
+| Commerce | Shopify headless (Storefront API) : produits, variantes, stock, panier, paiement |
+| Hébergement | Vercel |
+
+**Principe clé : une seule timeline maîtresse.** Tout l'état visuel (caméra, objets, textes) est une fonction pure de la progression du scroll. On peut aller en avant, en arrière, recharger au milieu : l'image est toujours la bonne. Le prototype applique déjà ce principe.
+
+**Budget** : JS initial < 150 Ko ; 3D scènes 01–07 < 3 Mo au total, chargées progressivement ; vidéo 08 < 6 Mo desktop / 3 Mo mobile ; 60 fps desktop, 30 fps minimum mobile.
 
 ---
 
-## 5. Liste des assets à réunir (récapitulatif)
+## 5. Assets à réunir
 
-| # | Asset | Scène | Qui | Priorité |
-|---|---|---|---|---|
-| 1 | Photos HD de face de chaque œuvre (lumière diffuse + rasante) | 03, 03b, 04 | Photographe / Marina | ★★★ |
-| 2 | Palette laines de chaque œuvre (références) | toutes | Marina | ★★★ |
-| 3 | Fichiers vectoriels des motifs personnalisables (Arcade d'abord) | 05 | Marina / graphiste | ★★★ |
-| 4 | Tournage pistolet sur fond vert | 03 | Vidéaste | ★★★ |
-| 5 | 3 plans macro de laine | 01 | Vidéaste | ★★ |
-| 6 | Modèle 3D de bobine | 02 | Dev 3D | ★★ |
-| 7 | Shooting atelier (7 photos + 7 micro‑vidéos) | 06 | Photographe | ★★ |
-| 8 | Nuancier des laines disponibles | 05 | Marina | ★★ |
-| 9 | 3 photos d'intérieurs | 05 | Banque d'images / shooting | ★ |
-| 10 | Sons (textile, explosion, pistolet) | 01–03 | Sound design | ★ |
-| 11 | Textes : histoire des œuvres, studio, ateliers | 04, 06 | Marina | ★★★ |
+| # | Asset | Scène | Priorité |
+|---|---|---|---|
+| 1 | **Fichiers vectoriels d'Arcade par zone** (chaque forme séparée, nommée) | 04, 05, 07 | ★★★ |
+| 2 | Références exactes des laines de chaque œuvre | toutes | ★★★ |
+| 3 | Photos HD de face de chaque œuvre (lumière diffuse + rasante) | 05, 06, pages | ★★★ |
+| 4 | Journée de tournage macro : main, tufting, colle, découpe, rasage, fibres, tapis retourné | 08 | ★★★ |
+| 5 | Plans atelier : pistolet posé, seconde main qui le saisit | 09 | ★★ |
+| 6 | Modèle 3D du tufting gun (modélisation à partir de photos du vrai) | 04 | ★★ |
+| 7 | Modèle 3D d'une bobine + photo de la texture de laine | 01–03 | ★★ |
+| 8 | Nuancier des laines disponibles pour la personnalisation | 07 | ★★ |
+| 9 | Formats et prix de chaque modèle | 05, 07 | ★★★ |
+| 10 | Textes : œuvres, studio, formules d'ateliers | 05, 06, 09 | ★★★ |
+| 11 | Sons (optionnels) : montée, souffle, TAC du pistolet, atelier | 03, 04, 08 | ★ |
 
-Un seul jour de tournage peut couvrir 4, 5 et 7.
-
----
-
-## 6. Questions ouvertes pour Marina
-
-1. **Œuvres** : quelles œuvres sont à vendre au lancement ? Lesquelles sont des pièces uniques, lesquelles sont déclinables ?
-2. **Personnalisation** : quels modèles sont personnalisables ? Combien de zones de couleur ? Quels formats exacts et quels prix ?
-3. **Arcade** est‑elle bien l'œuvre « signature » qui se construit en scène 03 ? (Elle doit être très reconnaissable et graphique.)
-4. **Ateliers** : durée, capacité, prix, fréquence ? Réservation via le site (Shopify) ou via un outil existant ?
-5. **Shopify** : compte déjà existant ? Produits déjà saisis ?
-6. **Son** : on le garde (optionnel, coupé par défaut) ou on l'abandonne ?
-7. **Langues** : français seul au lancement, ou français + anglais ?
-8. **Tournage** : qui filme ? Disponibilité de l'atelier de Colombes pour une journée ?
+Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes.
 
 ---
 
-## 7. Plan de réalisation proposé
+## 6. Décisions à prendre
+
+1. **Arcade** est-il bien l'œuvre signature, et fait-il bien 51 × 51 cm dans sa version originale ?
+2. **Personnalisation** : quelles zones d'Arcade sont modifiables (proposition : 3 à 5), quelles laines, quels prix par format ?
+3. **Langue** de la phrase de l'explosion : « LA COULEUR N'A PAS DE LIMITES. » (FR, proposée par défaut) ou « COLOUR HAS NO LIMITS. » ?
+4. **Ateliers** : formules exactes, prix, capacité, outil de réservation.
+5. **Shopify** : compte existant ? produits déjà saisis ?
+6. **Tournage** : qui filme, quand ?
+
+---
+
+## 7. Plan de réalisation
 
 | Phase | Contenu | Livrable |
 |---|---|---|
-| **1. Prototype « gris »** | Les 6 scènes en formes simples (cubes, aplats, textes), la vraie timeline de scroll, la vraie longueur, Lenis + GSAP. | Lien de test pour **valider le rythme** avant de produire le moindre asset coûteux. |
-| **2. Scène signature** | Scène 02 (explosion) finalisée en vraie 3D + scène 03 avec un faux pistolet. | Valider la DA et la faisabilité perf mobile. |
-| **3. Tournage + assets** | Journée de tournage, photos des œuvres, vectorisation d'Arcade. | Assets finaux. |
-| **4. Commerce** | Shopify headless : galerie, fiches, panier, configurateur Arcade. | Achat possible de bout en bout. |
-| **5. Ateliers + finitions** | Scène 06, page ateliers, reduced‑motion, mobile, SEO, perf. | Mise en ligne. |
-
-La phase 1 est la plus importante : c'est elle qui dira si ~1 500 vh c'est trop long, si l'explosion arrive au bon moment, et si le passage vers l'achat est naturel. Elle se fait avant de dépenser un euro en tournage.
+| **1. Prototype gris** ✅ démarré | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme** avant toute production. |
+| **2. Scènes signatures** | Filament + fibres + explosion en vraie 3D ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
+| **3. Tournage + assets** | Journée à Colombes, photos des œuvres, modèles 3D. | Assets finaux. |
+| **4. Commerce** | Next.js + Shopify headless : galerie, fiches, panier, configurateur. | Achat de bout en bout. |
+| **5. Finitions** | Scènes 08–10 avec vraies vidéos, mobile, reduced-motion, SEO, perf. | Mise en ligne. |

@@ -1,0 +1,116 @@
+:root {
+  --noir: #0B0A09;
+  --ecru: #EEE9E1;
+  --encre: #1E1C1A;
+  --ui: rgba(238, 233, 225, .72);
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--noir); }
+body { font-family: var(--font); color: var(--ecru); background: var(--noir); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+#track { height: 1600vh; }
+#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#veil { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
+
+/* Éléments pilotés par la timeline : invisibles tant que main.js ne les allume pas */
+[data-in], [data-out] { opacity: 0; visibility: hidden; }
+
+/* ---------- interface permanente ---------- */
+#nav { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; z-index: 20; font-size: 11px; letter-spacing: .18em; pointer-events: none; mix-blend-mode: difference; color: #fff; }
+#nav > * { pointer-events: auto; }
+#nav .mono { font-weight: 600; letter-spacing: .3em; }
+#nav .menu { display: flex; gap: 22px; text-transform: uppercase; }
+#nav .cart { opacity: .8; }
+#skip, #sound { position: fixed; bottom: 18px; z-index: 20; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; opacity: .5; mix-blend-mode: difference; color: #fff; }
+#skip { left: 24px; }
+#sound { right: 24px; opacity: .35; visibility: visible; }
+#hint { position: fixed; bottom: 12vh; left: 0; right: 0; text-align: center; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: rgba(238,233,225,.45); z-index: 5; }
+#hint span { display: block; margin-top: 8px; animation: bob 2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(6px); } }
+
+/* ---------- textes ---------- */
+.t { position: fixed; z-index: 10; pointer-events: none; text-align: center; left: 0; right: 0; }
+.t-title { top: 50%; transform: translateY(-50%); font-size: 11px; letter-spacing: .45em; line-height: 2; mix-blend-mode: difference; color: #fff; }
+.t-flash { top: 50%; transform: translateY(-50%); font-size: clamp(28px, 6.4vw, 108px); font-weight: 800; letter-spacing: -.02em; line-height: .95; padding: 0 16px; color: #fff; mix-blend-mode: difference; }
+.t-tac { bottom: 16vh; font-size: 13px; letter-spacing: .5em; color: var(--encre); }
+.big { top: 50%; transform: translateY(-50%); font-size: clamp(32px, 7vw, 112px); font-weight: 800; letter-spacing: -.02em; color: #fff; }
+
+.card { left: 32px; right: auto; bottom: 64px; text-align: left; color: var(--encre); font-size: 12px; letter-spacing: .08em; line-height: 1.7; pointer-events: auto; }
+.card-no { font-size: 13px; font-weight: 700; letter-spacing: .25em; margin-bottom: 4px; }
+.lnk { display: inline-block; margin-top: 10px; border-bottom: 1px solid currentColor; padding-bottom: 2px; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; }
+
+#tip { position: fixed; z-index: 15; pointer-events: none; color: var(--encre); font-size: 11px; letter-spacing: .12em; line-height: 1.6; opacity: 0; transition: opacity .2s; background: rgba(238,233,225,.85); padding: 10px 12px; backdrop-filter: blur(6px); }
+#tip b { display: block; letter-spacing: .25em; font-size: 12px; }
+
+/* ---------- configurateur ---------- */
+#config { position: fixed; left: 32px; top: 50%; transform: translateY(-50%); z-index: 12; color: var(--encre); width: 280px; display: flex; flex-direction: column; gap: 22px; }
+#config .lbl, .atelier-info .lbl { font-size: 11px; letter-spacing: .25em; font-weight: 700; margin-bottom: 10px; }
+.btn { border: 1px solid currentColor; padding: 12px 18px; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; align-self: flex-start; transition: background .2s, color .2s; }
+.btn:hover, .btn-fill { background: var(--encre); color: var(--ecru); }
+.btn-fill:hover { background: transparent; color: var(--encre); }
+.zones { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.zones button { font-size: 10px; letter-spacing: .1em; padding: 5px 8px; border: 1px solid rgba(30,28,26,.3); }
+.zones button.on { border-color: var(--encre); background: var(--encre); color: var(--ecru); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatches button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); transition: transform .2s; }
+.swatches button:hover { transform: scale(1.15); }
+.formats { display: flex; flex-direction: column; gap: 6px; font-size: 13px; letter-spacing: .06em; }
+.formats button { text-align: left; opacity: .5; }
+.formats button::before { content: "○  "; }
+.formats button.on { opacity: 1; }
+.formats button.on::before { content: "●  "; }
+.price { margin-top: 12px; font-size: 14px; letter-spacing: .05em; }
+.price small { font-size: 10px; opacity: .5; }
+.cfg-done { display: flex; flex-direction: column; gap: 10px; }
+#cfg-continue { align-self: flex-start; }
+
+/* ---------- overlays vidéo ---------- */
+.ov { position: fixed; inset: 0; z-index: 8; }
+#ov-real { background: #070606; }
+#ov-atelier { background: #2B1D16; }
+.film { position: absolute; inset: 6vh 6vw; background: #1a1714; overflow: hidden; display: flex; align-items: flex-end; }
+.film.warm { background: #4a3226; }
+.grain { position: absolute; inset: -50%; background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px); background-size: 3px 3px; animation: grain .4s steps(3) infinite; }
+@keyframes grain { 33% { transform: translate(-1%, 1%); } 66% { transform: translate(1%, -1%); } }
+.shot { position: relative; padding: 28px 32px; font-size: 14px; letter-spacing: .05em; color: rgba(238,233,225,.8); }
+.shot small { display: block; font-size: 10px; letter-spacing: .3em; opacity: .55; margin-bottom: 6px; }
+.atelier-info { position: fixed; left: 0; right: 0; bottom: 12vh; text-align: center; color: var(--ecru); display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.offers { display: flex; gap: 28px; font-size: 12px; letter-spacing: .1em; }
+.offers div { display: flex; flex-direction: column; gap: 4px; }
+.offers span { opacity: .6; }
+.next { font-size: 11px; letter-spacing: .12em; opacity: .8; }
+.next small { opacity: .6; }
+.atelier-info .btn { align-self: center; }
+.atelier-info .btn-fill { background: var(--ecru); color: #2B1D16; }
+
+#ov-studio { background: var(--ecru); color: var(--encre); display: flex; align-items: center; justify-content: center; z-index: 9; }
+.studio { display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center; padding: 16px; }
+#studio-art { width: min(220px, 40vw); height: auto; }
+.studio-name { font-size: 15px; letter-spacing: .45em; line-height: 2; font-weight: 600; }
+.studio-name span { font-weight: 400; }
+.studio-nav, .studio-social { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; }
+.studio-social { opacity: .55; }
+
+/* ---------- revue ---------- */
+#hud { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 30; width: min(560px, calc(100vw - 200px)); font: 10px/1.4 ui-monospace, Menlo, monospace; color: #fff; background: rgba(0,0,0,.55); padding: 6px 10px 8px; border-radius: 6px; backdrop-filter: blur(6px); }
+#hud.off { display: none; }
+.hud-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.hud-bar { position: relative; height: 10px; display: flex; cursor: pointer; }
+.hud-bar span { flex: none; height: 100%; border-right: 1px solid rgba(0,0,0,.6); background: rgba(255,255,255,.18); font-size: 7px; line-height: 10px; text-align: center; overflow: hidden; }
+.hud-bar span:hover { background: rgba(255,255,255,.4); }
+#hud-cursor { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #F2C230; }
+#toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 40; background: var(--encre); color: var(--ecru); font-size: 11px; letter-spacing: .12em; padding: 10px 16px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+#toast.on { opacity: 1; }
+
+@media (max-width: 720px) {
+  #nav .menu a { display: none; }
+  #config { left: 16px; right: 16px; top: auto; bottom: 56px; transform: none; width: auto; gap: 12px; background: rgba(238,233,225,.85); padding: 14px; backdrop-filter: blur(8px); }
+  .card { left: 16px; bottom: 56px; }
+  #hud { width: calc(100vw - 32px); bottom: 44px; }
+  .offers { gap: 16px; }
+}

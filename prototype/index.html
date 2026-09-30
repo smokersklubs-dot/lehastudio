@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marina Lehacaut Studio — prototype gris</title>
+<meta name="description" content="Marina Lehacaut Studio — tapis et œuvres tuftées à la main à Colombes. Œuvres, collections personnalisables et ateliers tufting.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Contenu lisible dès le chargement (SEO / sans WebGL). Visuellement révélé plus tard. -->
+<h1 class="sr-only">Marina Lehacaut Studio — tapis et œuvres tuftées à la main à Colombes</h1>
+<nav class="sr-only" aria-label="Plan du site">
+  <a href="#oeuvres">Œuvres</a> <a href="#collections">Collections</a> <a href="#sur-mesure">Sur mesure</a>
+  <a href="#ateliers">Ateliers tufting à Colombes</a> <a href="#studio">Le studio</a>
+</nav>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"></div>
+
+<!-- ============ Interface permanente ============ -->
+<header id="nav">
+  <a class="mono" href="#" data-in="4.8">MLS</a>
+  <div class="menu" data-in="43">
+    <a href="#oeuvres">Œuvres</a><a href="#collections">Collections</a><a href="#sur-mesure">Sur mesure</a><a href="#ateliers">Ateliers</a><a href="#studio">Le studio</a>
+    <span class="cart">Panier (<b id="cart-count">0</b>)</span>
+  </div>
+</header>
+<button id="skip" data-out="55">passer</button>
+<button id="sound" aria-label="Son (coupé)">son off</button>
+<div id="hint" data-out="1.2">faites défiler<span>↓</span></div>
+
+<!-- ============ Textes au-dessus du canvas ============ -->
+<div class="t t-title" data-in="4.8" data-out="7.4">MARINA LEHACAUT<br>STUDIO</div>
+<div class="t t-flash" data-in="25.9" data-out="27.0" data-fade="0.12">LA COULEUR N'A PAS DE LIMITES.</div>
+<div class="t t-tac" data-in="34.4" data-out="35.6" data-fade="0.2">TAC.</div>
+<div class="t t-tac" data-in="36.3" data-out="37.9" data-fade="0.2">TAC TAC TAC.</div>
+
+<div class="t card" data-in="53.2" data-out="56.5">
+  <div class="card-no">ARCADE Nº01</div>
+  <div>Œuvre textile</div>
+  <div>51 × 51 cm</div>
+  <a href="#oeuvres/arcade" class="lnk" data-toast="→ fiche produit /oeuvres/arcade">Découvrir la pièce →</a>
+</div>
+
+<div id="tip" aria-hidden="true"></div>
+
+<!-- ============ Scène 07 : configurateur ============ -->
+<aside id="config" data-in="67" data-out="77">
+  <button class="btn" id="cfg-start" data-in="67" data-out="77">PERSONNALISER</button>
+  <div class="cfg-block" data-in="69.8" data-out="77">
+    <div class="lbl">CHOISISSEZ VOTRE PALETTE</div>
+    <div class="zones" id="zones"></div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="cfg-block" data-in="72.5" data-out="77">
+    <div class="lbl">FORMAT</div>
+    <div class="formats" id="formats"></div>
+  </div>
+  <div class="cfg-block" data-in="75" data-out="77">
+    <button class="btn btn-fill" id="cfg-create">CRÉER MON ARCADE</button>
+    <div class="price"><span id="price"></span> <small>prix fictifs</small></div>
+  </div>
+  <div class="cfg-done" id="cfg-done" hidden>
+    <div class="lbl">VOICI VOTRE TAPIS.</div>
+    <button class="btn btn-fill" id="cfg-cart">Ajouter au panier</button>
+    <a class="lnk" href="#creer/arcade" data-toast="→ configurateur plein écran /creer/arcade">Continuer dans le configurateur →</a>
+  </div>
+  <button class="lnk" id="cfg-continue" hidden>Continuer le voyage ↓</button>
+</aside>
+
+<!-- ============ Scène 08 : du digital au réel ============ -->
+<section class="ov" id="ov-real" data-in="77" data-out="86" data-fade="0">
+  <div class="film">
+    <div class="grain"></div>
+    <div class="shot" id="shot"><small>VRAIE VIDÉO — PLAN <b id="shot-n">01</b>/08</small><span id="shot-t"></span></div>
+  </div>
+  <div class="t big" data-in="79" data-out="82.5">FAIT À LA MAIN.</div>
+  <div class="t big" data-in="82.8" data-out="86">À COLOMBES.</div>
+</section>
+
+<!-- ============ Scène 09 : l'atelier ============ -->
+<section class="ov" id="ov-atelier" data-in="86" data-out="94.5" data-fade="0.4">
+  <div class="film warm">
+    <div class="grain"></div>
+    <div class="shot"><small>VRAIE VIDÉO</small><span id="atelier-t">Le tufting gun est posé sur l'établi.</span></div>
+  </div>
+  <div class="t big" data-in="90.4" data-out="94.5">À VOUS.</div>
+  <div class="atelier-info" data-in="91.6" data-out="94.5">
+    <div class="lbl">ATELIERS TUFTING — COLOMBES</div>
+    <div class="offers" data-in="92.4" data-out="94.5">
+      <div><b>Initiation</b><span>2 h</span></div>
+      <div><b>Création</b><span>3 h</span></div>
+      <div><b>Atelier privé</b><span>sur demande</span></div>
+    </div>
+    <div class="next" data-in="92.4" data-out="94.5">Prochaine date : samedi 17 octobre · 4 places <small>(exemple)</small></div>
+    <a class="btn btn-fill" data-in="93.2" data-out="94.5" href="#ateliers" data-toast="→ /ateliers">Découvrir les ateliers →</a>
+  </div>
+</section>
+
+<!-- ============ Scène 10 : le studio ============ -->
+<section class="ov" id="ov-studio" data-in="94.5" data-fade="0.8">
+  <div class="studio">
+    <svg id="studio-art" viewBox="-1 -1 2 2" aria-label="Arcade"></svg>
+    <div class="studio-name">MARINA LEHACAUT<br><span>STUDIO</span></div>
+    <nav class="studio-nav"><a href="#oeuvres">Œuvres</a><a href="#collections">Collections</a><a href="#sur-mesure">Sur mesure</a><a href="#ateliers">Ateliers</a><a href="#studio">Le studio</a></nav>
+    <nav class="studio-social"><a href="#">Instagram</a><a href="#">Pinterest</a><a href="#">Contact</a></nav>
+  </div>
+</section>
+
+<!-- ============ Outil de revue (touche H) ============ -->
+<div id="hud">
+  <div class="hud-row"><b id="hud-scene"></b><span id="hud-pct"></span></div>
+  <div class="hud-bar" id="hud-bar"><i id="hud-cursor"></i></div>
+</div>
+<div id="toast"></div>
+
+<div id="track"></div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
