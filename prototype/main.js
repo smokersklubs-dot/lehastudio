@@ -5,8 +5,8 @@
 // reculer ou recharger au milieu : l'image est toujours la bonne.
 // Seules exceptions : l'ondulation au repos, la souris, et le mode interactif de la scène 07.
 //
-// 0 → 33 % : vidéos Flow V01 → V07 lues au rythme du scroll, voir FILM plus bas.
-// Ensuite : 3D (le geste en provisoire, puis Arcade, la galerie et le configurateur).
+// 0 → 43 % : vidéos Flow V01 → V10 lues au rythme du scroll, voir FILM plus bas.
+// Ensuite : 3D (Arcade qui naît, la galerie, le configurateur).
 
 import * as THREE from './vendor/three.module.min.js';
 import Lenis from './vendor/lenis.mjs';
@@ -367,7 +367,7 @@ $('#studio-art').innerHTML = `
 const SHOTS = ['La main de Marina.', 'Le tufting gun pique la toile.', 'La laine, les bobines.', 'La colle étalée au dos.', 'La découpe.', 'Le rasage.', 'Les fibres qui volent.', 'Le tapis terminé, retourné.'];
 
 // =====================================================================
-// FILM — vidéos Flow pilotées par le scroll (0 → 33 %)
+// FILM — vidéos Flow pilotées par le scroll (0 → 43 %)
 // =====================================================================
 // Chaque plan occupe une plage du scroll ; sa position dans la plage donne son temps.
 // Deux encodages par plan, avec des images clés très rapprochées pour pouvoir sauter
@@ -381,6 +381,9 @@ const CLIPS = [
   { src: 'media/v05-envol', a: 21, b: 25 },
   { src: 'media/v06-explosion', a: 25, b: 30 },
   { src: 'media/v07-toile', a: 30, b: 33 },
+  { src: 'media/v08-pistolet', a: 33, b: 36 },
+  { src: 'media/v09-premier-trait', a: 36, b: 39 },
+  { src: 'media/v10-construction', a: 39, b: 43 },
 ];
 const XF = 0.35; // durée du fondu enchaîné, en % de scroll
 const filmEl = document.getElementById('film');
@@ -466,7 +469,7 @@ function frame(now) {
   else { scene.fog.near = 14; scene.fog.far = 120; }
 
   // ---------------- visibilités (on ne dessine que ce qui sert)
-  atelier.visible = gp >= 29.5 && gp < 54;
+  atelier.visible = gp >= 42.6 && gp < 54;
   arcade.visible = gp >= 43 && gp < 77.5;
   galerie.visible = gp >= 55 && gp < 68;
 
@@ -666,7 +669,7 @@ function frame(now) {
   hud.pct.textContent = `${gp.toFixed(1)} %  ·  p ${P[si].toFixed(2)}${cfg.interactive ? '  ·  CONFIG' : ''}`;
   hud.cursor.style.left = `${gp}%`;
 
-  if ((gp >= 29.5 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
+  if ((gp >= 42.6 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 

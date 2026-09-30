@@ -1,7 +1,7 @@
 # MARINA LEHACAUT STUDIO — Storyboard du film interactif
 
 > Cahier des charges créatif et technique de l'accueil.
-> **v0.3** — direction artistique ivoire, et intro (0 → 33 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
+> **v0.3** — direction artistique ivoire, et intro (0 → 43 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
 > v0.2 — l'accueil est pensé comme un film interactif, et plus comme une suite de sections.
 > Prototype « gris » correspondant : [`prototype/`](prototype/).
 
@@ -82,7 +82,7 @@ Longueur totale de l'accueil : **≈ 2 000 vh** (20 hauteurs d'écran). Les pour
 | 01 | Le fil | 0 → 5 % | 100 | Fibre, fil | Vidéo Flow V01 | — |
 | 02 | Entrer dans la matière | 5 → 15 % | 200 | Fil, couleur | Vidéos Flow V02 + V03 | — |
 | 03 | Sortie, envol, explosion | 15 → 30 % | 300 | Couleur | Vidéos Flow V04 → V07 | — |
-| 04 | Le geste | 30 → 43 % | 260 | Geste | Vidéos Flow V08 → V10 (prototype : 3D) | — |
+| 04 | Le geste | 30 → 43 % | 260 | Geste | Vidéos Flow V07 → V10 | — |
 | 05 | Arcade naît | 43 → 55 % | 240 | Forme, œuvre | WebGL + image HD | **1re apparition** |
 | 06 | La galerie impossible | 55 → 67 % | 240 | Œuvre | WebGL (architecture) | Œuvres cliquables |
 | 07 | Casser l'œuvre | 67 → 77 % | 200 | Personnalisation | WebGL + UI | **Configurateur** |
@@ -152,7 +152,7 @@ fond écru #EEE9E1
 
 **Participation du visiteur** : autour du curseur, quelques fibres libres flottent et suivent le mouvement avec retard, puis se déposent près de la ligne en cours. Le visiteur ne dessine **pas** : il a juste l'impression d'accompagner la naissance.
 
-**Technique** : vidéos Flow V07 → V10 lues au scroll (le prototype utilise encore une 3D provisoire). Les fibres qui suivent la souris sont une fine couche WebGL transparente **par-dessus** la vidéo. Les lignes tracées ici *sont* les premières lignes du motif d'Arcade : la forme exacte d'Arcade prend le relais en 3D/photo à la scène 05 (voir § 3.3).
+**Technique** : vidéos Flow V08 (33 → 36 %), V09 (36 → 39 %), V10 (39 → 43 %) lues au scroll. **TAC.** tombe sur le premier contact de V08, **TAC TAC TAC.** sur le trait corail de V09. Les fibres qui suivent la souris sont une fine couche WebGL transparente **par-dessus** la vidéo. Les lignes tracées ici *sont* les premières lignes du motif d'Arcade : la forme exacte d'Arcade prend le relais en 3D/photo à la scène 05 (voir § 3.3).
 
 ### 05 — ARCADE NAÎT (43 → 55 %)
 
@@ -269,9 +269,9 @@ On ne génère **jamais** l'intro en une seule vidéo : chaque séquence fait 8�
 | 05 | L'envol | 21 → 25 % | Flow | ✅ `v05-envol` |
 | 06 | Explosion | 25 → 30 % | Flow | ✅ `v06-explosion` |
 | 07 | Transition toile (fibres qui s'écartent → ivoire vide) | 30 → 33 % | Flow | ✅ `v07-toile` |
-| 08 | Le fil entre dans la toile, le tufting gun entre | 33 → 36 % | Flow | ⏳ prochaine |
-| 09 | Premier trait (TAC) | 36 → 39 % | Flow | ⏳ |
-| 10 | Construction du motif | 39 → 43 % | Flow **ou** 3D | ⏳ voir 3.3 |
+| 08 | Le pistolet touche la toile | 33 → 36 % | Flow | ✅ `v08-pistolet` (à refaire, voir 3.3) |
+| 09 | Premier trait corail (TAC) | 36 → 39 % | Flow | ✅ `v09-premier-trait` (à refaire, voir 3.3) |
+| 10 | Construction du motif | 39 → 43 % | Flow | ✅ `v10-construction` (à refaire, voir 3.3) |
 | 11 | Révélation d'Arcade | 43 → 52 % | 3D + photo HD | — |
 | 12 | Matière (travelling sur le tapis fini) | 52 → 55 % | Flow ou vraie macro | ⏳ |
 | 13 | Galerie | 55 → 67 % | **3D** (interactive) | — |
@@ -295,7 +295,7 @@ La 16 montre un produit que le client va acheter : c'est la vraie photo du tapis
 4. Même vitesse de caméra en fin de plan N et en début de plan N+1. Si Flow démarre « à l'arrêt », le site masque 0,3 s de raccord par un fondu enchaîné, pas plus.
 5. On garde l'ivoire chaud comme fond de tous les plans « rêve ». Pas de pièce réelle (fenêtres, sol béton) sauf décision contraire.
 
-### 3.3 Observations sur V01 → V07
+### 3.3 Observations sur V01 → V10
 
 - **Ce qui marche** : l'ivoire, la texture de laine, la palette (corail, framboise, orange, jaune, marine, cobalt), et la révélation « c'était une bobine » de V04. Les quatre raccords passent avec un fondu de 0,35 % de scroll.
 - **Doublon** : deux des fichiers reçus sont identiques (`Coral_red_wool_thread_floating…`) ; un seul est utilisé.
@@ -303,6 +303,12 @@ La 16 montre un produit que le client va acheter : c'est la vraie photo du tapis
 - **Rupture 1 — le type de bobine (21 %)** : V04 finit sur des **bobines en bois à joues** multicolores (type couture) ; V05 et V06 utilisent des **tubes à mandrin carton, sans joues, d'une seule couleur**. Au fondu, la bobine change de nature. Correction la moins chère : **régénérer la fin de V04** (sortie du tunnel) en demandant « a single coral-red wool tube spool with a cardboard core, no flanges », pour qu'elle révèle la bobine corail de la première image de V05.
 - **Rupture 2 — le décor (25 %)** : V05 se passe dans le vide ivoire ; V06 commence dans une **vraie salle d'exposition** (fenêtres, piliers, sol béton). Deux options : (a) régénérer le début de V06 à partir de la dernière image de V05 (la sphère se forme dans le vide ivoire) ; (b) assumer la salle comme un « avant-goût » de la galerie impossible. Recommandé : (a), pour garder l'espace abstrait jusqu'à la toile.
 - **Construction d'Arcade (V10)** : Flow ne reproduira pas fidèlement le vrai motif d'Arcade. Deux options : (a) Flow génère le geste et les lignes, et la forme exacte d'Arcade est révélée en 3D/photo par-dessus ; (b) tout en 3D. Recommandé : (a).
+
+- **V08 → V10, le geste** : les trois plans sont beaux et racontent bien la montée (un point → une ligne corail → une surface). Trois problèmes, par ordre d'importance :
+  1. **Trois pistolets différents** : noir et acier à poignée pistolet (V08), mécanisme acier nu (V09), gris industriel à poignée bleue (V10). C'est la rupture la plus visible de tout le film, et la plus repérable par quelqu'un qui tufte. À refaire avec **une seule image de référence du pistolet**, idéalement celui de Marina, fournie à Flow pour les trois plans.
+  2. **Le motif de V10 se transforme au lieu de se construire** : des zones déjà tuftées changent de forme d'une image à l'autre. Un œil averti y voit de l'IA. Dans le prompt : « areas that are already tufted never change; new tufted rows are only added next to existing ones ».
+  3. **Le décor** : V08–V10 sont dans un atelier meublé (étagères, cônes, fenêtres), et une main apparaît dans V10. Pour la fin du « rêve », préférer la toile et le pistolet dans le vide ivoire, sans main : la main est réservée à la scène 09 (« À vous »).
+- **Le passage à 43 %** : V10 finit sur un motif d'arches, proche de l'esprit d'Arcade mais pas Arcade. C'est aujourd'hui la marche la plus haute du prototype, parce qu'on passe de la vidéo à la 3D grise. Elle disparaîtra avec Arcade vectorisé (vraies zones, vraie laine) ; idéalement V10 se termine sur **une toile ivoire presque vide avec les premières lignes d'Arcade**, pour que la 3D prenne le relais sans rupture.
 
 ### 3.4 Ajout à tous les prompts à partir de V08
 
@@ -410,7 +416,7 @@ Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes
 | Phase | Contenu | Livrable |
 |---|---|---|
 | **1. Prototype gris** ✅ | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme**. |
-| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (V01 → V07 faits) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
+| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (tous faits, V04–V06 et V08–V10 à reprendre pour les raccords) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
 | **3. Tournage + assets** | Journée à Colombes, photos des œuvres, modèles 3D. | Assets finaux. |
 | **4. Commerce** | Next.js + Shopify headless : galerie, fiches, panier, configurateur. | Achat de bout en bout. |
 | **5. Finitions** | Scènes 08–10 avec vraies vidéos, mobile, reduced-motion, SEO, perf. | Mise en ligne. |
