@@ -1,7 +1,7 @@
 # MARINA LEHACAUT STUDIO — Storyboard du film interactif
 
 > Cahier des charges créatif et technique de l'accueil.
-> **v0.3** — direction artistique ivoire, et intro (0 → 21 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
+> **v0.3** — direction artistique ivoire, et intro (0 → 33 %) en vraies vidéos générées avec Flow, pilotées par le scroll. Voir aussi [§ 3. Production vidéo Flow](#3-production-vidéo-flow).
 > v0.2 — l'accueil est pensé comme un film interactif, et plus comme une suite de sections.
 > Prototype « gris » correspondant : [`prototype/`](prototype/).
 
@@ -120,10 +120,11 @@ Fond **ivoire chaud** (plus de noir). Un espace vide et lumineux, un fil corail 
 | Plage | Image | Statut |
 |---|---|---|
 | 15 → 21 % (V04) | Tunnel de laine multicolore → la caméra recule → **c'était le fil enroulé sur une bobine** qui flotte dans l'ivoire → d'autres bobines apparaissent. | ✅ |
-| 21 → 25 % (V05) | L'envol : les bobines se multiplient en profondeur, fils qui traînent, puis elles accélèrent vers un point central. | ⏳ à générer (prototype : 3D provisoire) |
-| 25 → 30 % (V06) | Arrêt, puis explosion élégante : les bobines partent, des centaines de fils traversent l'image, la caméra passe au travers. Se termine par **un fil corail qui balaie tout l'écran**. | ⏳ à générer (prototype : 3D provisoire) |
+| 21 → 25 % (V05) | L'envol : une bobine corail, puis des dizaines, en profondeur, qui convergent vers un point central. | ✅ |
+| 25 → 30 % (V06) | La sphère de bobines, puis l'explosion : les bobines partent, les fils traversent l'image, la caméra passe au travers et finit sur **un gros plan de laine corail plein cadre**. | ✅ |
+| 30 → 33 % (V07) | Macro de laine corail, les fils se séparent et s'éloignent, jusqu'à un **ivoire vide** : la toile de la scène 04 apparaît dans ce vide. | ✅ |
 
-Texte HTML : **LA COULEUR N'A PAS DE LIMITES.** une fraction de seconde au cœur de l'explosion (≈ 26,7 → 27,6 %).
+Texte HTML : **LA COULEUR N'A PAS DE LIMITES.** une fraction de seconde au cœur de l'explosion (≈ 27 → 28 %).
 
 Le fil corail plein écran de la fin de V06 sert de transition vers la toile de la scène 04 : **explosion → fil plein écran → fil qui traverse une toile → tufting gun**.
 
@@ -265,10 +266,10 @@ On ne génère **jamais** l'intro en une seule vidéo : chaque séquence fait 8�
 | 02 | Entrée dans la matière | 5 → 10 % | Flow | ✅ `v02-matiere` |
 | 03 | La couleur | 10 → 15 % | Flow | ✅ `v03-couleur` |
 | 04 | Sortie → la bobine | 15 → 21 % | Flow | ✅ `v04-sortie` |
-| 05 | L'envol | 21 → 25 % | Flow | ⏳ prochaine |
-| 06 | Explosion | 25 → 30 % | Flow | ⏳ |
-| 07 | Transition toile (fil plein écran → toile claire) | 30 → 32 % | Flow | ⏳ |
-| 08 | Le tufting gun entre | 32 → 36 % | Flow | ⏳ |
+| 05 | L'envol | 21 → 25 % | Flow | ✅ `v05-envol` |
+| 06 | Explosion | 25 → 30 % | Flow | ✅ `v06-explosion` |
+| 07 | Transition toile (fibres qui s'écartent → ivoire vide) | 30 → 33 % | Flow | ✅ `v07-toile` |
+| 08 | Le fil entre dans la toile, le tufting gun entre | 33 → 36 % | Flow | ⏳ prochaine |
 | 09 | Premier trait (TAC) | 36 → 39 % | Flow | ⏳ |
 | 10 | Construction du motif | 39 → 43 % | Flow **ou** 3D | ⏳ voir 3.3 |
 | 11 | Révélation d'Arcade | 43 → 52 % | 3D + photo HD | — |
@@ -294,25 +295,27 @@ La 16 montre un produit que le client va acheter : c'est la vraie photo du tapis
 4. Même vitesse de caméra en fin de plan N et en début de plan N+1. Si Flow démarre « à l'arrêt », le site masque 0,3 s de raccord par un fondu enchaîné, pas plus.
 5. On garde l'ivoire chaud comme fond de tous les plans « rêve ». Pas de pièce réelle (fenêtres, sol béton) sauf décision contraire.
 
-### 3.3 Observations sur V01 → V04
+### 3.3 Observations sur V01 → V07
 
 - **Ce qui marche** : l'ivoire, la texture de laine, la palette (corail, framboise, orange, jaune, marine, cobalt), et la révélation « c'était une bobine » de V04. Les quatre raccords passent avec un fondu de 0,35 % de scroll.
 - **Doublon** : deux des fichiers reçus sont identiques (`Coral_red_wool_thread_floating…`) ; un seul est utilisé.
-- **Type de bobine — à trancher avant V05** : V04 finit sur des **bobines en bois à joues** (type couture), multicolores. Les images de référence `ref-explosion-bobines.jpg` et `ref-bobine-flottante.jpg` montrent des **tubes à mandrin carton sans joues**, et l'atelier utilise des **cônes**. Recommandation : garder V04 et, pour V05–V06, partir de sa dernière image en écrivant explicitement « the same wooden flanged spools as in the start image ». Sinon Flow changera de bobine au milieu du film.
-- `ref-explosion-bobines.jpg` (sphère de bobines dans une salle d'exposition) : très bonne référence de **composition** pour l'instant figé avant l'explosion, mais son décor (fenêtres, sol béton) casse l'espace ivoire abstrait. À utiliser comme inspiration, pas comme image de départ.
+- **V05 → V07** : le trio fonctionne. V07 est un excellent raccord : les fibres corail s'écartent et laissent un ivoire vide, exactement ce qu'il faut pour faire apparaître la toile.
+- **Rupture 1 — le type de bobine (21 %)** : V04 finit sur des **bobines en bois à joues** multicolores (type couture) ; V05 et V06 utilisent des **tubes à mandrin carton, sans joues, d'une seule couleur**. Au fondu, la bobine change de nature. Correction la moins chère : **régénérer la fin de V04** (sortie du tunnel) en demandant « a single coral-red wool tube spool with a cardboard core, no flanges », pour qu'elle révèle la bobine corail de la première image de V05.
+- **Rupture 2 — le décor (25 %)** : V05 se passe dans le vide ivoire ; V06 commence dans une **vraie salle d'exposition** (fenêtres, piliers, sol béton). Deux options : (a) régénérer le début de V06 à partir de la dernière image de V05 (la sphère se forme dans le vide ivoire) ; (b) assumer la salle comme un « avant-goût » de la galerie impossible. Recommandé : (a), pour garder l'espace abstrait jusqu'à la toile.
 - **Construction d'Arcade (V10)** : Flow ne reproduira pas fidèlement le vrai motif d'Arcade. Deux options : (a) Flow génère le geste et les lignes, et la forme exacte d'Arcade est révélée en 3D/photo par-dessus ; (b) tout en 3D. Recommandé : (a).
 
-### 3.4 Ajouts aux prompts V05 et V06
+### 3.4 Ajout à tous les prompts à partir de V08
 
-À ajouter à la fin des prompts de V05 et V06, avec la dernière image de V04 (puis de V05) comme image de départ :
+À coller à la fin de chaque prompt, avec la dernière image du plan précédent (dossier `flow/frames/`) comme image de départ :
 
 ```text
 Start exactly from the provided start image.
-Keep the same wooden flanged spools with multicolored wool, the same warm ivory void,
-the same soft window light and the same camera lens.
-No room, no walls, no floor details, no windows in view.
+Keep the same warm ivory void, the same soft diffused light and the same camera lens.
+No room, no walls, no windows, no furniture, no floor details in view.
 Silent. No text.
 ```
+
+**V08 / V09 — le pistolet** : les images de départ proposées (fil qui touche la toile, pistolet devant un cadre en bois) sont bonnes pour le geste, mais le pistolet est **dans un atelier meublé** (étagères, fenêtres, cônes). Pour rester dans le rêve jusqu'à Arcade, garder le cadre et le pistolet **seuls dans le vide ivoire**. Et fournir à Flow **une photo du vrai pistolet de Marina** : un pistolet inventé serait repéré immédiatement par les participant·es des ateliers.
 
 ### 3.5 Encodage pour le site
 
@@ -325,7 +328,7 @@ ffmpeg -i in.mp4 -an -vf scale=1280:-2 -c:v libx264 -preset slow -crf 28 -g 1 -p
 ffmpeg -i in.mp4 -an -vf scale=1280:-2 -c:v libvpx-vp9 -crf 38 -b:v 0 -g 6 -row-mt 1 out.webm
 ```
 
-Poids actuel : 1,4 à 3,8 Mo par plan en WebM, 3 à 5 Mo en MP4. Pour la production : version mobile portrait recadrée (720 px de large), et première image de V01 en affiche.
+Poids actuel : 1,4 à 4,5 Mo par plan en WebM (≈ 19 Mo pour les 7 plans), 3 à 5,9 Mo en MP4. C’est acceptable pour un prototype, trop lourd pour la production : chaque plan sera chargé juste avant d’être vu, et la version mobile sera en 720 px. Pour la production : version mobile portrait recadrée (720 px de large), et première image de V01 en affiche.
 
 ---
 
@@ -407,7 +410,7 @@ Les assets 4 et 5 peuvent être tournés le même jour, à l'atelier de Colombes
 | Phase | Contenu | Livrable |
 |---|---|---|
 | **1. Prototype gris** ✅ | Les 10 scènes en formes simples, la vraie longueur, la timeline maîtresse, les interactions souris, la personnalisation factice. | `prototype/` — valider le **rythme**. |
-| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (V01 → V04 faits) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
+| **2. Intro vidéo** 🟡 en cours | Plans Flow V01 → V10 intégrés au scroll (V01 → V07 faits) ; Arcade vectorisé qui se casse. | Validation DA + test perf mobile. |
 | **3. Tournage + assets** | Journée à Colombes, photos des œuvres, modèles 3D. | Assets finaux. |
 | **4. Commerce** | Next.js + Shopify headless : galerie, fiches, panier, configurateur. | Achat de bout en bout. |
 | **5. Finitions** | Scènes 08–10 avec vraies vidéos, mobile, reduced-motion, SEO, perf. | Mise en ligne. |

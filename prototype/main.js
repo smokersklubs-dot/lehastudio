@@ -5,8 +5,8 @@
 // reculer ou recharger au milieu : l'image est toujours la bonne.
 // Seules exceptions : l'ondulation au repos, la souris, et le mode interactif de la scène 07.
 //
-// 0 → 21 % : vraies vidéos (Flow) lues au rythme du scroll, voir FILM plus bas.
-// 21 → 30 % : envol + explosion en 3D provisoire, en attendant les vidéos V05 et V06.
+// 0 → 33 % : vidéos Flow V01 → V07 lues au rythme du scroll, voir FILM plus bas.
+// Ensuite : 3D (le geste en provisoire, puis Arcade, la galerie et le configurateur).
 
 import * as THREE from './vendor/three.module.min.js';
 import Lenis from './vendor/lenis.mjs';
@@ -40,8 +40,6 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const range = (x, a, b) => clamp((x - a) / (b - a));
 const smooth = (a, b, x) => { const t = range(x, a, b); return t * t * (3 - 2 * t); };
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
-const easeOutBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 const local = (gp, i) => range(gp, SCENES[i].a, SCENES[i].b);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 let seed = 7;
@@ -96,61 +94,6 @@ addEventListener('pointermove', (e) => {
   mouse.y = -(e.clientY / innerHeight) * 2 + 1;
   mouse.px = e.clientX; mouse.py = e.clientY; mouse.has = true;
 });
-
-// =====================================================================
-// 03 — L'EXPLOSION : bobines + fils
-// =====================================================================
-const SP = V(0, 0, -100);
-const spoolGeo = new THREE.CylinderGeometry(0.42, 0.62, 1.5, 40, 1, true);
-const coreGeo = new THREE.CylinderGeometry(0.16, 0.2, 1.7, 16);
-const coreMat = new THREE.MeshStandardMaterial({ color: '#C9B89B', roughness: 0.7 });
-function makeSpool(color) {
-  const g = new THREE.Group();
-  const m = woolMat(color, 3);
-  m.side = THREE.DoubleSide;
-  m.bumpMap.repeat.set(1, 18);
-  g.add(new THREE.Mesh(spoolGeo, m), new THREE.Mesh(coreGeo, coreMat));
-  return g;
-}
-const spools = [];
-const spoolWorld = new THREE.Group();
-scene.add(spoolWorld);
-for (let i = 0; i < 30; i++) {
-  const s = makeSpool(PALETTE5[i % 5]);
-  const base = i === 0 ? SP.clone() : SP.clone().add(new THREE.Vector3(rr(-1, 1), rr(-0.7, 0.7), rr(-1, 0.4)).normalize().multiplyScalar(rr(2.2, 7)));
-  s.userData = {
-    base,
-    th: i === 0 ? -1 : i < 3 ? 0.1 : i < 10 ? rr(0.2, 0.3) : rr(0.36, 0.46),
-    rot: V(rr(-0.8, 0.8), rand() * 6, rr(-0.8, 0.8)),
-    spin: rr(0.6, 1.4) * (rand() > 0.5 ? 1 : -1),
-    dir: base.clone().sub(SP).add(V(rr(-0.5, 0.5), rr(-0.5, 0.5), rr(-0.5, 0.5))).normalize(),
-    sc: i === 0 ? 1 : rr(0.55, 1),
-  };
-  spools.push(s);
-  spoolWorld.add(s);
-}
-// Fil qui sort de la première bobine (révélé à la fin de la scène 02).
-{
-  const pts = [];
-  for (let k = 0; k <= 30; k++) { const t = k / 30; pts.push(V(0.55 + t * 5, 0.2 + Math.sin(t * 5) * 0.4, t * 7)); }
-  const lead = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.03, 8), woolMat(WOOL.rouge, 1));
-  spools[0].add(lead);
-  spools[0].userData.lead = lead;
-}
-// Fils de l'explosion : cylindres instanciés.
-const THREADS = 420;
-const threadMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 5), new THREE.MeshStandardMaterial({ roughness: 0.8 }), THREADS);
-const threadData = [];
-for (let i = 0; i < THREADS; i++) {
-  const dir = V(rr(-1, 1), rr(-1, 1), rr(-0.4, 1.4)).normalize(); // biaisé vers la caméra
-  threadData.push({
-    origin: SP.clone().add(V(rr(-2, 2), rr(-1.5, 1.5), rr(-2, 2))),
-    dir, q: new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), dir),
-    speed: rr(10, 34), len: rr(3, 14), r: rr(0.012, 0.035),
-  });
-  threadMesh.setColorAt(i, new THREE.Color(PALETTE5[i % 5]));
-}
-spoolWorld.add(threadMesh);
 
 // =====================================================================
 // 04 — LE GESTE : la toile, le pistolet, les lignes
@@ -344,7 +287,6 @@ const timed = [...document.querySelectorAll('[data-in], [data-out]')].map((el) =
   el, a: parseFloat(el.dataset.in ?? '-1'), b: parseFloat(el.dataset.out ?? '101'),
   f: parseFloat(el.dataset.fade ?? '0.5'),
 }));
-const veil = $('#veil');
 const hud = { scene: $('#hud-scene'), pct: $('#hud-pct'), bar: $('#hud-bar'), cursor: $('#hud-cursor') };
 for (const s of SCENES) {
   const sp = document.createElement('span');
@@ -425,7 +367,7 @@ $('#studio-art').innerHTML = `
 const SHOTS = ['La main de Marina.', 'Le tufting gun pique la toile.', 'La laine, les bobines.', 'La colle étalée au dos.', 'La découpe.', 'Le rasage.', 'Les fibres qui volent.', 'Le tapis terminé, retourné.'];
 
 // =====================================================================
-// FILM — vidéos Flow pilotées par le scroll (0 → 21 %)
+// FILM — vidéos Flow pilotées par le scroll (0 → 33 %)
 // =====================================================================
 // Chaque plan occupe une plage du scroll ; sa position dans la plage donne son temps.
 // Deux encodages par plan, avec des images clés très rapprochées pour pouvoir sauter
@@ -436,8 +378,10 @@ const CLIPS = [
   { src: 'media/v02-matiere', a: 5, b: 10 },
   { src: 'media/v03-couleur', a: 10, b: 15 },
   { src: 'media/v04-sortie', a: 15, b: 21 },
+  { src: 'media/v05-envol', a: 21, b: 25 },
+  { src: 'media/v06-explosion', a: 25, b: 30 },
+  { src: 'media/v07-toile', a: 30, b: 33 },
 ];
-const EXPLO = { a: 21, b: 30 }; // à remplacer par V05 (envol) + V06 (explosion)
 const XF = 0.35; // durée du fondu enchaîné, en % de scroll
 const filmEl = document.getElementById('film');
 for (const c of CLIPS) {
@@ -489,7 +433,7 @@ addEventListener('scroll', () => { if (gp > 50) { try { localStorage.setItem('ml
 // Boucle
 // =====================================================================
 let gp = 0, currentExplode = 0, hovered = null, last = performance.now();
-const tmpM = new THREE.Matrix4(), tmpV = new THREE.Vector3(), tmpS = new THREE.Vector3(), tmpC = new THREE.Color(), bg = new THREE.Color();
+const tmpV = new THREE.Vector3(), tmpC = new THREE.Color(), bg = new THREE.Color();
 const monoC = new THREE.Color(), baseC = new THREE.Color();
 
 function resize() {
@@ -518,66 +462,16 @@ function frame(now) {
   bg.copy(ECRU).lerp(GALERIE, smooth(55, 58, gp) * (1 - smooth(66, 68, gp)));
   renderer.setClearColor(bg);
   scene.fog.color.copy(bg);
-  if (gp < 30) { scene.fog.near = 6; scene.fog.far = 60; }
-  else if (gp >= 55 && gp < 67) { scene.fog.near = 10; scene.fog.far = lerp(15, 75, smooth(55, 58.5, gp)); } // la galerie se découvre
+  if (gp >= 55 && gp < 67) { scene.fog.near = 10; scene.fog.far = lerp(15, 75, smooth(55, 58.5, gp)); } // la galerie se découvre
   else { scene.fog.near = 14; scene.fog.far = 120; }
 
   // ---------------- visibilités (on ne dessine que ce qui sert)
-  spoolWorld.visible = gp >= EXPLO.a - 0.5 && gp < 30.3;
   atelier.visible = gp >= 29.5 && gp < 54;
   arcade.visible = gp >= 43 && gp < 77.5;
   galerie.visible = gp >= 55 && gp < 68;
 
-  // ================= 01 → 03 début — FILM (vidéos Flow)
+  // ================= 01 → 04 début — FILM (vidéos Flow)
   updateFilm(gp);
-
-  // ================= 03 — L'EXPLOSION
-  if (spoolWorld.visible) {
-    const p = range(gp, EXPLO.a, EXPLO.b);
-    const pr = Math.min(p, 0.58); // figé entre 0,58 et 0,60
-    const e = easeOutExpo(range(p, 0.6, 0.86));
-    spools.forEach((s, i) => {
-      const u = s.userData;
-      const appear = u.th < 0 ? 1 : easeOutBack(range(p, u.th, u.th + 0.05));
-      s.visible = appear > 0.001 && e < 0.999;
-      s.scale.setScalar(Math.max(0.0001, appear * u.sc * (1 - e * 0.6)));
-      const spin = pr * pr * 40 * u.spin + time * 0.15 * u.spin * (p < 0.58 || p > 0.6 ? 1 : 0);
-      s.rotation.set(u.rot.x + (i ? spin * 0.3 : 0), u.rot.y + spin, u.rot.z);
-      if (i === 0) s.rotation.set(0.15 + Math.sin(time * 0.4) * 0.05, spin * 0.6, 0.12);
-      s.position.copy(u.base).addScaledVector(u.dir, e * 30).add(V(mouse.sx * 0.4 * (i ? 1 : 0), mouse.sy * 0.3 * (i ? 1 : 0), 0));
-    });
-    spools[0].userData.lead.visible = p < 0.6;
-    // Fils
-    const fade = 1 - smooth(0.82, 1, p);
-    threadMesh.visible = p > 0.6 && fade > 0;
-    if (threadMesh.visible) {
-      const grow = range(p, 0.6, 0.64);
-      threadData.forEach((d, i) => {
-        const head = e * d.speed;
-        const tail = Math.max(0, head - d.len * grow);
-        tmpV.copy(d.origin).addScaledVector(d.dir, (head + tail) / 2);
-        tmpS.set(d.r * fade, Math.max(0.001, head - tail), d.r * fade);
-        tmpM.compose(tmpV, d.q, tmpS);
-        threadMesh.setMatrixAt(i, tmpM);
-      });
-      threadMesh.instanceMatrix.needsUpdate = true;
-    }
-    {
-      if (p < 0.6) {
-        const a = 0.55 * Math.sin(Math.PI * range(p, 0, 0.6));
-        const d = 8.5 + 5 * smooth(0.1, 0.5, p);
-        camPos.copy(SP).add(V(Math.sin(a) * d + 0.9 * (1 - range(p, 0, 0.1)), 0.3 + Math.sin(a) * 1.2, Math.cos(a) * d));
-        look.copy(SP);
-      } else {
-        // La caméra traverse l'explosion.
-        const t = easeInOut(range(p, 0.6, 0.92));
-        const shake = (1 - range(p, 0.6, 0.66)) * (p > 0.6 ? 0.25 : 0);
-        camPos.set(Math.sin(time * 60) * shake, 0.3 * (1 - t) + Math.cos(time * 53) * shake, SP.z + 13.5 - 34 * t);
-        look.set(0, 0, camPos.z - 10);
-        roll = t * 0.5;
-      }
-    }
-  }
 
   // ================= 04 — LE GESTE  (+ début 05)
   if (atelier.visible) {
@@ -748,11 +642,6 @@ function frame(now) {
   camera.lookAt(look);
   if (roll) camera.rotateZ(roll);
 
-  // ================= voile de transition
-  let vc = '#EEE9E1', vo = 0;
-  if (Math.abs(gp - 30) < 0.8) { vc = '#EEE9E1'; vo = 1 - Math.abs(gp - 30) / 0.8; }
-  veil.style.background = vc; veil.style.opacity = clamp(vo);
-
   // ================= DOM
   for (const t of timed) {
     let o = t.f === 0 ? (gp >= t.a && gp < t.b ? 1 : 0) : Math.min(range(gp, t.a, t.a + t.f), 1 - range(gp, t.b - t.f, t.b));
@@ -777,7 +666,7 @@ function frame(now) {
   hud.pct.textContent = `${gp.toFixed(1)} %  ·  p ${P[si].toFixed(2)}${cfg.interactive ? '  ·  CONFIG' : ''}`;
   hud.cursor.style.left = `${gp}%`;
 
-  if ((gp >= EXPLO.a - 0.5 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
+  if ((gp >= 29.5 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 
