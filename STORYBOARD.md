@@ -341,6 +341,48 @@ Poids actuel : 1,4 à 4,5 Mo par plan en WebM (≈ 19 Mo pour les 7 plans), 3 à
 
 ---
 
+## 3 bis. Textes du film et rétention
+
+Le visiteur ne doit jamais rester plus de quelques secondes sans une phrase à lire. Chaque plan porte **une accroche** (grande, animée) et, quand c'est utile, **une explication** (petite, en bas à gauche). Les textes sont en HTML par-dessus les vidéos : nets, traduisibles, indexables. Ils sont définis dans `prototype/index.html` (bloc `#beats`), avec leur plage de scroll.
+
+### Les animations de texte (toutes pilotées par le scroll, donc réversibles)
+
+| Effet | Rendu | Utilisé pour |
+|---|---|---|
+| `words` | Les mots montent un à un depuis un masque, puis sortent vers le haut | Les accroches |
+| `letters` | Les lettres arrivent de tout l'écran, floues et tournées, et se rassemblent ; elles repartent en éclats | Les moments « wow » : LA COULEUR N'A PAS DE LIMITES, FAIT À LA MAIN, À VOUS, TAC |
+| `mask` | Le mot se découvre de gauche à droite en se resserrant | Les mots-chapitres : Entrez dans la matière, Le geste, Approchez, À Colombes |
+| `counter` | Un compteur défile au rythme du tufting | « 40 000 boucles » pendant V10 |
+| `marquee` | Le nom de l'œuvre, géant et détouré, glisse derrière la fiche | ARCADE pendant V13 |
+| `fade` | Apparition douce avec un petit trait corail | Les explications |
+
+### Le fil des accroches
+
+| Scroll | Accroche | Explication |
+|---|---|---|
+| 1 → 5 % | MARINA LEHACAUT STUDIO · **Tout commence *par un fil.*** | — |
+| 5 → 10 % | **Un fil, ce sont *des milliers* de fibres.** · **Entrez dans la matière.** | Et un seul tapis en réunit des millions.* |
+| 10 → 15 % | **La couleur n'est pas choisie. *Elle est composée.*** | Corail, framboise, safran, marine, cobalt. Chaque teinte est choisie à la main, bobine par bobine. |
+| 15 → 21 % | **Tout ce que vous venez de traverser…** · ***…tenait* sur une bobine.** | — |
+| 21 → 30 % | **Une bobine. Puis dix. *Puis cent.*** · **LA COULEUR N'A PAS DE LIMITES.** | Retenez votre souffle. |
+| 30 → 43 % | **Maintenant, *il faut lui donner une forme.*** · **Le geste.** · TAC. · TAC TAC TAC. · **Chaque boucle est plantée *à la main.*** · **40 000 boucles*** | Un pistolet à tufting, une toile tendue, et des milliers de boucles posées une à une. / et pas une seule machine pour décider à sa place. |
+| 43 → 56 % | **Et puis, *elle se détache.*** · **Une pièce unique *vient de naître.*** · **Approchez.** · ARCADE (géant) + fiche Nº01 | Boucles, velours, reliefs : la main de l'artiste se lit dans la matière. |
+| 56 → 67 % | **Chaque œuvre *a son monde.*** | Survolez une œuvre pour la découvrir. Cliquez pour entrer dedans. |
+| 67 → 77 % | **Et si vous *la réinventiez ?*** | — |
+| 77 → 86 % | **Tout ce que vous venez de voir *existe.*** · **FAIT À LA MAIN.** · **À COLOMBES.** | — |
+| 86 → 94 % | **Jusqu'ici, *vous regardiez.*** · **Cette fois, *c'est vous qui créez.*** · **À VOUS.** | — |
+
+\* **À vérifier avec Marina avant publication** : « des millions » de fibres par tapis, et le nombre de boucles d'un Arcade 51 × 51 (40 000 est une estimation). On n'affiche que des chiffres vrais.
+
+### Les repères qui retiennent
+
+- **Le chapitre en cours** (en haut à gauche, sous le monogramme) : « 03 · L'explosion ». Le visiteur sait où il en est dans l'histoire.
+- **Le fil de progression** (bord droit) : un fil corail qui se déroule au fil du scroll, avec une petite bobine au bout. C'est la barre de progression, dans l'univers de Marina.
+- **La relance « À suivre »** : si le visiteur s'arrête plus de 3,5 s, une pastille apparaît en bas : « À SUIVRE · L'explosion ↓ ». Elle annonce le chapitre suivant pour donner envie de continuer. Elle disparaît dès qu'il scrolle.
+- **L'alternance** : une accroche (grande) puis une explication (petite), jamais deux grands textes d'affilée ; les effets `letters` sont réservés aux pics d'émotion pour garder leur force.
+
+---
+
 ## 4. Parcours après l'accueil
 
 ```

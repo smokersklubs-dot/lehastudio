@@ -15,7 +15,7 @@ import Lenis from './vendor/lenis.mjs';
 const SCENES = [
   { id: '01', name: 'Le fil', a: 0, b: 5 },
   { id: '02', name: 'Entrer dans la matière', a: 5, b: 15 },
-  { id: '03', name: "Sortie, envol, explosion", a: 15, b: 30 },
+  { id: '03', name: "L'explosion", a: 15, b: 30 },
   { id: '04', name: 'Le geste', a: 30, b: 43 },
   { id: '05', name: 'Arcade naît', a: 43, b: 55 },
   { id: '06', name: 'La galerie impossible', a: 55, b: 67 },
@@ -245,6 +245,141 @@ let toastT;
 function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
 document.addEventListener('click', (e) => { const a = e.target.closest('[data-toast]'); if (a) { e.preventDefault(); toast(a.dataset.toast); } });
 $('#sound').onclick = () => toast('Son : non inclus dans le prototype');
+
+
+// =====================================================================
+// TEXTES DU FILM — accroches animées, pilotées par le scroll
+// =====================================================================
+// Chaque .beat a une plage [data-a, data-b] (en % de scroll). Sa progression q (0 → 1)
+// donne : entrée (0 → 0,35), tenue, sortie (0,72 → 1). Le texte reste dans le HTML (SEO).
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+function splitWords(el) {
+  const out = [];
+  const add = (text, wrapTag) => {
+    for (const word of text.split(/(\s+)/)) {
+      if (!word) continue;
+      if (/^\s+$/.test(word)) { el.appendChild(document.createTextNode(' ')); continue; }
+      const w = document.createElement('span'); w.className = 'w';
+      const inner = document.createElement('span'); inner.textContent = word;
+      if (wrapTag) { const t = document.createElement(wrapTag); t.appendChild(inner); w.appendChild(t); out.push(inner); }
+      else { w.appendChild(inner); out.push(inner); }
+      el.appendChild(w);
+    }
+  };
+  const nodes = [...el.childNodes];
+  el.textContent = '';
+  for (const n of nodes) {
+    if (n.nodeType === 3) add(n.textContent);
+    else if (n.nodeName === 'BR') el.appendChild(document.createElement('br'));
+    else add(n.textContent, n.nodeName.toLowerCase());
+  }
+  return out;
+}
+function splitChars(el) {
+  const out = [];
+  // Les lettres d'un même mot restent groupées : la ligne ne se coupe qu'entre deux mots.
+  const add = (text, parent) => {
+    text.split(/(\s+)/).forEach((word) => {
+      if (!word) return;
+      if (/^\s+$/.test(word)) { parent.appendChild(document.createTextNode(' ')); return; }
+      const wd = document.createElement('span'); wd.className = 'wd';
+      for (const ch of word) {
+        const c = document.createElement('span'); c.className = 'c'; c.textContent = ch;
+        c.dataset.dx = rr(-1, 1).toFixed(3); c.dataset.dy = rr(-1, 1).toFixed(3); c.dataset.r = rr(-1, 1).toFixed(3);
+        wd.appendChild(c); out.push(c);
+      }
+      parent.appendChild(wd);
+    });
+  };
+  const nodes = [...el.childNodes];
+  el.textContent = '';
+  for (const n of nodes) {
+    if (n.nodeType === 3) add(n.textContent, el);
+    else if (n.nodeName === 'BR') el.appendChild(document.createElement('br'));
+    else { const t = document.createElement(n.nodeName.toLowerCase()); el.appendChild(t); add(n.textContent, t); }
+  }
+  return out;
+}
+const BEATS = [...document.querySelectorAll('.beat')].map((el) => {
+  const b = { el, a: +el.dataset.a, b: +el.dataset.b, fx: el.dataset.fx };
+  if (b.fx === 'words') b.parts = splitWords(el);
+  if (b.fx === 'letters' || b.fx === 'type') b.parts = splitChars(el);
+  if (b.fx === 'counter') { b.num = el.querySelector('.num'); b.to = +el.dataset.to; }
+  return b;
+});
+function updateBeats(gp) {
+  for (const b of BEATS) {
+    const on = gp > b.a && gp < b.b;
+    b.el.style.visibility = on ? 'visible' : 'hidden';
+    if (!on) continue;
+    const q = range(gp, b.a, b.b);
+    const enter = range(q, 0, 0.35), exit = range(q, 0.72, 1);
+    const st = b.el.style;
+    if (b.fx === 'words') {
+      const n = b.parts.length;
+      b.parts.forEach((p, i) => {
+        const e = easeOut(range(enter, (i / n) * 0.6, (i / n) * 0.6 + 0.4));
+        const x = easeOut(range(exit, (i / n) * 0.3, (i / n) * 0.3 + 0.7));
+        p.style.transform = `translateY(${(1 - e) * 115 - x * 115}%) rotate(${(1 - e) * 6}deg)`;
+      });
+    } else if (b.fx === 'letters') {
+      // Explosion inversée : les lettres arrivent de partout et se rassemblent, puis repartent.
+      const n = b.parts.length;
+      b.parts.forEach((p, i) => {
+        const e = easeOut(range(enter, (i / n) * 0.45, (i / n) * 0.45 + 0.55));
+        const x = exit * exit;
+        const k = (1 - e) + x;
+        const d = p.dataset;
+        p.style.transform = `translate(${d.dx * k * 60}vw, ${d.dy * k * 45}vh) rotate(${d.r * k * 180}deg) scale(${1 + k * 1.5})`;
+        p.style.opacity = 1 - Math.min(1, k * 1.2);
+        p.style.filter = k > 0.01 ? `blur(${k * 10}px)` : 'none';
+      });
+    } else if (b.fx === 'type') {
+      const n = b.parts.length;
+      b.parts.forEach((p, i) => { p.style.opacity = (enter * n > i ? 1 : 0) * (1 - exit); });
+    } else if (b.fx === 'mask') {
+      // Le mot se découvre de gauche à droite en se resserrant, puis s'efface par la gauche.
+      const e = easeOut(enter);
+      st.clipPath = `inset(0 ${(1 - e) * 100}% 0 ${exit * 100}%)`;
+      st.letterSpacing = `${(1 - e) * 0.25 - 0.035}em`;
+    } else if (b.fx === 'fade') {
+      const e = easeOut(enter);
+      st.opacity = e * (1 - exit);
+      st.transform = `translateY(${(1 - e) * 24 - exit * 16}px)`;
+    } else if (b.fx === 'counter') {
+      st.opacity = easeOut(enter) * (1 - exit);
+      const v = Math.round(b.to * easeOut(range(q, 0.05, 0.8)) / 10) * 10;
+      b.num.textContent = v.toLocaleString('fr-FR');
+    } else if (b.fx === 'marquee') {
+      st.opacity = Math.min(enter * 2, 1 - exit);
+      st.transform = `translateX(${lerp(8, -58, q)}%)`;
+    }
+  }
+}
+
+// Repères de rétention
+const chapterEl = $('#chapter'), threadFill = $('#thread i'), threadBob = $('#thread b'), nudgeEl = $('#nudge');
+let chapterIdx = -1, lastGp = -1, lastMove = performance.now();
+function updateRetention(gp, now) {
+  const si = Math.max(0, SCENES.findIndex((s) => gp < s.b));
+  if (si !== chapterIdx) {
+    chapterIdx = si;
+    chapterEl.classList.add('swap');
+    setTimeout(() => {
+      chapterEl.querySelector('.ch-n').textContent = SCENES[si].id;
+      chapterEl.querySelector('.ch-name').textContent = SCENES[si].name;
+      chapterEl.classList.remove('swap');
+    }, 250);
+  }
+  chapterEl.style.visibility = gp > 1.2 && gp < 94 ? 'visible' : 'hidden';
+  threadFill.style.transform = `scaleY(${gp / 100})`;
+  threadBob.style.top = `calc(${gp}% - 7px)`;
+  // Si le visiteur s'arrête plus de 3,5 s, on lui donne envie de voir la suite.
+  if (Math.abs(gp - lastGp) > 0.01) { lastGp = gp; lastMove = now; }
+  const idle = now - lastMove > 3500 && gp > 1.5 && gp < 93 && !cfg.interactive;
+  if (idle && SCENES[si + 1]) nudgeEl.querySelector('span').textContent = SCENES[si + 1].name;
+  nudgeEl.classList.toggle('on', idle);
+}
 
 // Configurateur
 const zonesEl = $('#zones'), swEl = $('#swatches'), fmtEl = $('#formats');
@@ -512,6 +647,8 @@ function frame(now) {
   if (roll) camera.rotateZ(roll);
 
   // ================= DOM
+  updateBeats(gp);
+  updateRetention(gp, now);
   for (const t of timed) {
     let o = t.f === 0 ? (gp >= t.a && gp < t.b ? 1 : 0) : Math.min(range(gp, t.a, t.a + t.f), 1 - range(gp, t.b - t.f, t.b));
     if (cfg.interactive && t.el.closest('#config')) o = t.el.id === 'cfg-start' ? 0 : 1;

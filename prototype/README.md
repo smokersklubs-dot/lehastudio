@@ -15,6 +15,10 @@ npx http-server -p 8765   # ou : python3 -m http.server 8765
 
 Puis ouvrir http://localhost:8765.
 
+## Textes et rétention
+
+Les accroches animées sont dans `index.html` (bloc `#beats`) : chaque texte a sa plage de scroll (`data-a` → `data-b`, en %) et son effet (`data-fx` : `words`, `letters`, `mask`, `counter`, `marquee`, `fade`, `type`). Pour changer un texte ou son moment, il suffit d'éditer le HTML. Le moteur est `updateBeats()` dans `main.js`.
+
 ## Outils de revue
 
 | Action | Effet |

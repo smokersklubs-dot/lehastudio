@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marina Lehacaut Studio — prototype gris</title>
 <meta name="description" content="Marina Lehacaut Studio — tapis et œuvres tuftées à la main à Colombes. Œuvres, collections personnalisables et ateliers tufting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Serif:ital@0;1&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,10 +35,63 @@
 <div id="hint" data-out="1.2">faites défiler<span>↓</span></div>
 
 <!-- ============ Textes au-dessus du canvas ============ -->
-<div class="t t-title" data-in="1.2" data-out="2.9">MARINA LEHACAUT<br>STUDIO</div>
-<div class="t t-flash" data-in="27.0" data-out="28.0" data-fade="0.12">LA COULEUR N'A PAS DE LIMITES.</div>
-<div class="t t-tac" data-in="34.4" data-out="35.6" data-fade="0.2">TAC.</div>
-<div class="t t-tac" data-in="36.3" data-out="37.9" data-fade="0.2">TAC TAC TAC.</div>
+<!-- ============ Textes du film : accroches animées au scroll ============
+     data-a / data-b : plage de scroll (en %). data-fx : animation. data-tone : dark (sur ivoire) ou light (sur image colorée). -->
+<div id="beats">
+  <p class="beat b-title" data-a="1.2" data-b="3.1" data-fx="type" data-tone="dark">MARINA LEHACAUT<br>STUDIO</p>
+  <p class="beat b-xl" data-a="3.0" data-b="5.2" data-fx="words" data-tone="dark">Tout commence <em>par un fil.</em></p>
+
+  <p class="beat b-xl" data-a="5.5" data-b="8.0" data-fx="words" data-tone="light">Un fil, ce sont <em>des milliers</em> de fibres.</p>
+  <p class="beat b-cap" data-a="6.2" data-b="8.0" data-fx="fade" data-tone="light">Et un seul tapis en réunit des millions.</p>
+  <p class="beat b-xxl" data-a="8.2" data-b="10.1" data-fx="mask" data-tone="light">Entrez dans la matière.</p>
+
+  <p class="beat b-xl" data-a="10.4" data-b="12.7" data-fx="words" data-tone="light">La couleur n'est pas choisie. <em>Elle est composée.</em></p>
+  <p class="beat b-cap" data-a="12.8" data-b="15.0" data-fx="fade" data-tone="light">Corail, framboise, safran, marine, cobalt. Chaque teinte est choisie à la main, bobine par bobine.</p>
+
+  <p class="beat b-xl" data-a="15.5" data-b="17.9" data-fx="words" data-tone="light">Tout ce que vous venez de traverser…</p>
+  <p class="beat b-xl" data-a="18.3" data-b="20.9" data-fx="words" data-tone="dark"><em>…tenait</em> sur une bobine.</p>
+
+  <p class="beat b-xl" data-a="21.3" data-b="24.7" data-fx="words" data-tone="dark">Une bobine. Puis dix. <em>Puis cent.</em></p>
+  <p class="beat b-cap" data-a="25.1" data-b="26.8" data-fx="fade" data-tone="dark">Retenez votre souffle.</p>
+  <p class="beat b-xxl" data-a="26.9" data-b="28.6" data-fx="letters" data-tone="dark">LA COULEUR N'A PAS DE LIMITES.</p>
+
+  <p class="beat b-xl" data-a="30.3" data-b="32.9" data-fx="words" data-tone="dark">Maintenant, <em>il faut lui donner une forme.</em></p>
+
+  <p class="beat b-xxl" data-a="33.2" data-b="35.1" data-fx="mask" data-tone="dark">Le geste.</p>
+  <p class="beat b-cap" data-a="33.8" data-b="36.0" data-fx="fade" data-tone="dark">Un pistolet à tufting, une toile tendue, et des milliers de boucles posées une à une.</p>
+  <p class="beat b-tac" data-a="35.0" data-b="36.2" data-fx="letters" data-tone="dark">TAC.</p>
+  <p class="beat b-tac" data-a="36.4" data-b="38.0" data-fx="letters" data-tone="light">TAC TAC TAC.</p>
+  <p class="beat b-xl" data-a="37.2" data-b="39.2" data-fx="words" data-tone="light">Chaque boucle est plantée <em>à la main.</em></p>
+
+  <div class="beat b-count" data-a="39.3" data-b="42.9" data-fx="counter" data-to="40000" data-tone="light">
+    <span class="num">0</span><span class="unit">boucles</span>
+    <span class="sub">et pas une seule machine pour décider à sa place.</span>
+  </div>
+
+  <p class="beat b-xl" data-a="43.3" data-b="45.4" data-fx="words" data-tone="dark">Et puis, <em>elle se détache.</em></p>
+  <p class="beat b-xl" data-a="45.6" data-b="47.9" data-fx="words" data-tone="dark">Une pièce unique <em>vient de naître.</em></p>
+  <p class="beat b-xxl" data-a="48.2" data-b="50.6" data-fx="mask" data-tone="light">Approchez.</p>
+  <p class="beat b-cap" data-a="50.8" data-b="53.0" data-fx="fade" data-tone="dark">Boucles, velours, reliefs : la main de l'artiste se lit dans la matière.</p>
+  <p class="beat b-marquee" data-a="53.0" data-b="56.4" data-fx="marquee" data-tone="dark" aria-hidden="true">ARCADE ARCADE ARCADE</p>
+
+  <p class="beat b-xl b-top" data-a="56.5" data-b="59.0" data-fx="words" data-tone="dark">Chaque œuvre <em>a son monde.</em></p>
+  <p class="beat b-cap b-right" data-a="57.0" data-b="61.0" data-fx="fade" data-tone="dark">Survolez une œuvre pour la découvrir. Cliquez pour entrer dedans.</p>
+
+  <p class="beat b-xl b-top" data-a="67.1" data-b="69.6" data-fx="words" data-tone="dark">Et si vous <em>la réinventiez ?</em></p>
+
+  <p class="beat b-xl" data-a="77.2" data-b="79.0" data-fx="words" data-tone="light">Tout ce que vous venez de voir <em>existe.</em></p>
+  <p class="beat b-xxl" data-a="79.1" data-b="82.6" data-fx="letters" data-tone="light">FAIT À LA MAIN.</p>
+  <p class="beat b-xxl" data-a="82.8" data-b="86.0" data-fx="mask" data-tone="light">À COLOMBES.</p>
+
+  <p class="beat b-xl" data-a="86.3" data-b="88.3" data-fx="words" data-tone="light">Jusqu'ici, <em>vous regardiez.</em></p>
+  <p class="beat b-xl" data-a="88.4" data-b="90.3" data-fx="words" data-tone="light">Cette fois, <em>c'est vous qui créez.</em></p>
+  <p class="beat b-xxl b-up" data-a="90.4" data-b="94.5" data-fx="letters" data-tone="light">À VOUS.</p>
+</div>
+
+<!-- Repères de rétention : chapitre en cours, fil de progression, relance si le visiteur s'arrête -->
+<div id="chapter" aria-hidden="true"><span class="ch-n"></span><span class="ch-name"></span></div>
+<div id="thread" aria-hidden="true"><i></i><b></b></div>
+<div id="nudge" aria-hidden="true"><small>À suivre</small><span></span><em>↓</em></div>
 
 <div class="t card" data-in="54" data-out="56.3">
   <div class="card-no">ARCADE Nº01</div>
@@ -76,8 +132,6 @@
     <div class="grain"></div>
     <div class="shot" id="shot"><small>VRAIE VIDÉO — PLAN <b id="shot-n">01</b>/08</small><span id="shot-t"></span></div>
   </div>
-  <div class="t big" data-in="79" data-out="82.5">FAIT À LA MAIN.</div>
-  <div class="t big" data-in="82.8" data-out="86">À COLOMBES.</div>
 </section>
 
 <!-- ============ Scène 09 : l'atelier ============ -->
@@ -86,7 +140,6 @@
     <div class="grain"></div>
     <div class="shot"><small>VRAIE VIDÉO</small><span id="atelier-t">Le tufting gun est posé sur l'établi.</span></div>
   </div>
-  <div class="t big" data-in="90.4" data-out="94.5">À VOUS.</div>
   <div class="atelier-info" data-in="91.6" data-out="94.5">
     <div class="lbl">ATELIERS TUFTING — COLOMBES</div>
     <div class="offers" data-in="92.4" data-out="94.5">
