@@ -24,8 +24,8 @@ import {
   renderArcadeSVG,
   buildIvoryGallery,
   createFloatingFibers,
-} from './rugs3d.js?v=8';
-import { createClassicalSoundtrack } from './classicalAudio.js?v=8';
+} from './rugs3d.js?v=9';
+import { createClassicalSoundtrack } from './classicalAudio.js?v=9';
 
 // ---------------------------------------------------------------- timeline
 const SCENES = [
@@ -904,17 +904,25 @@ function updateFilm(gp) {
 }
 
 // =====================================================================
-// Scroll
+// Scroll — Toujours démarrer à la Scène 01 (0 %) au chargement
 // =====================================================================
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+try { localStorage.removeItem('mls-seen'); } catch { }
+window.scrollTo(0, 0);
+
 const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
 const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
 function goTo(pct, immediate = true) { lenis.scrollTo((clamp(pct, 0, 100) / 100) * maxScroll(), { immediate, force: true }); }
-function skip() { goTo(55.8, false); try { localStorage.setItem('mls-seen', '1'); } catch { } }
+function skip() { goTo(55.8, false); }
 $('#skip').onclick = skip;
 const params = new URLSearchParams(location.search);
-if (params.has('p')) requestAnimationFrame(() => goTo(parseFloat(params.get('p'))));
-else { try { if (localStorage.getItem('mls-seen') && !params.has('intro')) requestAnimationFrame(() => goTo(55.8)); } catch { } }
-addEventListener('scroll', () => { if (gp > 50) { try { localStorage.setItem('mls-seen', '1'); } catch { } } }, { passive: true });
+if (params.has('p')) {
+  requestAnimationFrame(() => goTo(parseFloat(params.get('p'))));
+} else {
+  requestAnimationFrame(() => goTo(0, true));
+}
 
 // =====================================================================
 // Boucle principale
