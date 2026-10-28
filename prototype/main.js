@@ -24,8 +24,8 @@ import {
   renderArcadeSVG,
   buildIvoryGallery,
   createFloatingFibers,
-} from './rugs3d.js?v=9';
-import { createClassicalSoundtrack } from './classicalAudio.js?v=9';
+} from './rugs3d.js?v=10';
+import { createClassicalSoundtrack } from './classicalAudio.js?v=10';
 
 // ---------------------------------------------------------------- timeline
 const SCENES = [
@@ -379,15 +379,22 @@ soundBtn.textContent = '♪ activer la musique';
 ['pointerdown', 'mousedown', 'touchstart'].forEach((ev) => {
   soundBtn.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
 });
-soundBtn.addEventListener('click', (e) => {
+
+let lastSoundToggle = 0;
+function onSoundBtnTap(e) {
   e.preventDefault();
   e.stopPropagation();
+  const now = performance.now();
+  if (now - lastSoundToggle < 350) return;
+  lastSoundToggle = now;
   soundSys.toggle();
   toast(soundSys.on ? 'Symphonie interactive activée' : 'Musique coupée');
-});
+}
+soundBtn.addEventListener('touchend', onSoundBtnTap, { passive: false });
+soundBtn.addEventListener('click', onSoundBtnTap);
 
-// Démarre l'ambiance musicale classique dès le premier geste hors bouton #sound
-['pointerdown', 'touchstart', 'keydown'].forEach((ev) => {
+// Démarre l'ambiance musicale classique dès le premier geste (touchend/click indispensables sur iOS/Android)
+['touchend', 'pointerup', 'click', 'touchstart', 'keydown'].forEach((ev) => {
   addEventListener(ev, (e) => {
     if (e.target && e.target.closest && e.target.closest('#sound')) return;
     soundSys.autoStartOnGesture();
@@ -881,10 +888,6 @@ for (const c of CLIPS) {
   filmEl.appendChild(v);
   c.el = v;
 }
-addEventListener('touchstart', () => {
-  for (const c of CLIPS) c.el.play().then(() => c.el.pause()).catch(() => { });
-  [vidReal, vidAtelier].forEach((v) => v && v.play().then(() => v.pause()).catch(() => { }));
-}, { once: true, passive: true });
 
 function updateFilm(gp) {
   const on = gp < CLIPS[CLIPS.length - 1].b + XF;

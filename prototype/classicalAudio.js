@@ -3,6 +3,7 @@
 // Inspiré de Beethoven (Sonate au Clair de Lune Op. 27 n°2, 7e Symphonie II. Allegretto)
 // et Mozart (Adagio K.488 / Lacrimosa) : Piano de concert, Violoncelle solo,
 // Quatuor & Orchestre à cordes, Harpe, Pizzicati et Réverbération de salle.
+// Compatible Desktop + Mobile (iOS Safari / Chrome iOS mode silencieux & Android).
 // ============================================================================
 
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -12,7 +13,6 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 // Progressions harmoniques classiques (en numéros MIDI) par acte dramatique :
-// En Do# mineur / Réb majeur / La majeur (tonalités de la Sonate Clair de Lune & Adagio)
 const PROGRESSIONS = {
   // 01. Le fil (0 -> 5 %) : Intime, mystérieux, arpèges style Clair de Lune (Do#m - La - Si - Do#m)
   fil: [
@@ -79,38 +79,36 @@ const PROGRESSIONS = {
   ],
 };
 
-// Calcule la courbe d'intensité dramatique (0.15 -> 1.0) tout au long du scroll (0 -> 100 %)
+// Calcule la courbe d'intensité dramatique (0.22 -> 1.0) tout au long du scroll (0 -> 100 %)
 function computeDramaticIntensity(gp, scrollSpeed) {
-  let base = 0.25;
+  let base = 0.30;
   if (gp < 5) {
-    base = lerp(0.18, 0.30, gp / 5); // Intro pianissimo
+    base = lerp(0.26, 0.38, gp / 5); // Intro clairement audible dès 0 %
   } else if (gp < 15) {
-    base = lerp(0.30, 0.52, (gp - 5) / 10); // Entrée violoncelle
+    base = lerp(0.38, 0.56, (gp - 5) / 10); // Entrée violoncelle
   } else if (gp < 25) {
-    base = lerp(0.52, 0.78, (gp - 15) / 10); // Envol des bobines (crescendo)
+    base = lerp(0.56, 0.80, (gp - 15) / 10); // Envol des bobines (crescendo)
   } else if (gp < 30) {
-    // WOW 1 : L'Explosion (apogée symphonique autour de 27.5 %)
     const peak = 1 - Math.min(1, Math.abs(gp - 27.4) / 2.8);
-    base = 0.78 + peak * 0.22;
+    base = 0.80 + peak * 0.20;
   } else if (gp < 43) {
-    base = lerp(0.45, 0.72, (gp - 30) / 13); // Le geste (ostinato rythmique qui s'intensifie)
+    base = lerp(0.50, 0.75, (gp - 30) / 13); // Le geste
   } else if (gp < 55) {
-    base = lerp(0.62, 0.82, (gp - 43) / 12); // Arcade naît (thème noble)
+    base = lerp(0.65, 0.85, (gp - 43) / 12); // Arcade naît
   } else if (gp < 67) {
-    base = 0.68; // La galerie ivoire (ampleur architecturale)
+    base = 0.72; // La galerie ivoire
   } else if (gp < 77) {
-    // WOW 2 : Casser l'œuvre (éclatement à 68-73 %, réassemblage à 75 %)
     const peak = 1 - Math.min(1, Math.abs(gp - 71.0) / 4.0);
-    base = 0.72 + peak * 0.26;
+    base = 0.74 + peak * 0.24;
   } else if (gp < 86) {
-    base = lerp(0.52, 0.66, (gp - 77) / 9); // Du digital au réel (chaleur acoustique)
+    base = lerp(0.56, 0.70, (gp - 77) / 9);
   } else if (gp < 94.5) {
-    base = lerp(0.60, 0.85, (gp - 86) / 8.5); // L'atelier ("À VOUS" crescendo inspirant)
+    base = lerp(0.64, 0.88, (gp - 86) / 8.5);
   } else {
-    base = lerp(0.45, 0.22, (gp - 94.5) / 5.5); // Le studio (coda douce)
+    base = lerp(0.48, 0.28, (gp - 94.5) / 5.5);
   }
   const speedBoost = clamp(Math.abs(scrollSpeed) * 0.04, 0, 0.18);
-  return clamp(base + speedBoost, 0.15, 1.0);
+  return clamp(base + speedBoost, 0.22, 1.0);
 }
 
 function getSectionKey(gp) {
@@ -125,146 +123,216 @@ function getSectionKey(gp) {
   return 'studio';
 }
 
-// Crée une réponse impulsionnelle stéréo de grande salle de concert / rotonde (2.8 s)
-function createConcertHallIR(ctx) {
-  const rate = ctx.sampleRate;
-  const length = Math.floor(rate * 2.8);
-  const impulse = ctx.createBuffer(2, length, rate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = impulse.getChannelData(ch);
-    let seed = ch === 0 ? 1337 : 7331;
-    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
-    for (let i = 0; i < length; i++) {
-      const t = i / rate;
-      // Premières réflexions + queue exponentielle chaude filtrée
-      const early = t < 0.08 ? Math.sin(t * 180) * 0.35 : 1.0;
-      const decay = Math.exp(-t * 2.35) * early;
-      data[i] = rnd() * decay * 0.45;
-    }
+// Crée un mini fichier WAV silencieux dans une balise <audio> pour déverrouiller
+// le canal haut-parleur sur iOS Safari / Chrome même lorsque le bouton Silencieux de l'iPhone est activé.
+function createIOSSilentSwitchUnlocker() {
+  try {
+    const sampleRate = 8000;
+    const numSamples = 800; // 0.1s
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+    const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // Mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    const audio = document.createElement('audio');
+    audio.src = URL.createObjectURL(blob);
+    audio.loop = true;
+    audio.playsInline = true;
+    audio.setAttribute('playsinline', '');
+    audio.setAttribute('webkit-playsinline', '');
+    audio.volume = 0.01;
+    return audio;
+  } catch {
+    return null;
   }
-  const conv = ctx.createConvolver();
-  conv.buffer = impulse;
-  return conv;
+}
+
+// Crée une réponse impulsionnelle stéréo légère (1.4 s) compatible mobile & desktop
+function createConcertHallIR(ctx) {
+  try {
+    const rate = ctx.sampleRate || 44100;
+    const length = Math.floor(rate * 1.4);
+    const impulse = ctx.createBuffer(2, length, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = impulse.getChannelData(ch);
+      let seed = ch === 0 ? 1337 : 7331;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+      for (let i = 0; i < length; i++) {
+        const t = i / rate;
+        const early = t < 0.06 ? Math.sin(t * 180) * 0.35 : 1.0;
+        const decay = Math.exp(-t * 3.1) * early;
+        data[i] = rnd() * decay * 0.42;
+      }
+    }
+    const conv = ctx.createConvolver();
+    conv.buffer = impulse;
+    return conv;
+  } catch {
+    return null;
+  }
 }
 
 export function createClassicalSoundtrack({ onStatusChange }) {
   let ctx = null;
+  let graphBuilt = false;
   let masterGain = null;
   let dryBus = null;
   let reverbBus = null;
   let stringPadBus = null;
   let padFilter = null;
   let padOscs = [];
+  const iosUnlocker = createIOSSilentSwitchUnlocker();
 
   let isPlaying = false;
   let userMuted = false;
-  let hasAutoStarted = false;
   let stepIndex = 0;
   let chordIndex = 0;
   let nextNoteTime = 0;
   let currentGp = 0;
   let currentSpeed = 0;
-  let currentIntensity = 0.25;
+  let currentIntensity = 0.32;
   let lastTacTime = 0;
 
-  function initAudio() {
-    if (ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    if (window.__mlsActiveAudioCtx) {
-      try { window.__mlsActiveAudioCtx.close(); } catch {}
+  // Déverrouillage synchrone immédiat dans le fil de l'événement utilisateur (critique sur iOS/Android)
+  function unlockAndBuildAudio() {
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch { }
     }
-    ctx = new AC();
-    window.__mlsActiveAudioCtx = ctx;
+    if (iosUnlocker && iosUnlocker.paused) {
+      try { iosUnlocker.play().catch(() => { }); } catch { }
+    }
 
-    masterGain = ctx.createGain();
-    masterGain.gain.value = 0.0001;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
 
-    // Compresseur doux de mastering orchestral
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16;
-    comp.knee.value = 18;
-    comp.ratio.value = 3;
-    comp.attack.value = 0.02;
-    comp.release.value = 0.25;
+    if (!ctx) {
+      if (window.__mlsActiveAudioCtx && window.__mlsActiveAudioCtx.state !== 'closed') {
+        try { window.__mlsActiveAudioCtx.close(); } catch { }
+      }
+      ctx = new AC();
+      window.__mlsActiveAudioCtx = ctx;
+    }
 
-    masterGain.connect(comp);
-    comp.connect(ctx.destination);
+    // 1. Appel synchrone immédiat de ctx.resume() + lecture d'un buffer 1-sample (exigence WebKit iOS)
+    if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
+      try { ctx.resume().catch(() => { }); } catch { }
+    }
+    try {
+      const silentBuf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = silentBuf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch { }
 
-    // Bus direct + Bus Réverbération de salle symphonique
-    dryBus = ctx.createGain();
-    dryBus.gain.value = 0.68;
-    dryBus.connect(masterGain);
+    // 2. Construction du graphe de synthèse
+    if (!graphBuilt) {
+      graphBuilt = true;
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.92;
 
-    const convolver = createConcertHallIR(ctx);
-    const revFilter = ctx.createBiquadFilter();
-    revFilter.type = 'lowpass';
-    revFilter.frequency.value = 2800; // Réverbération chaude sans dureté aiguë
-    reverbBus = ctx.createGain();
-    reverbBus.gain.value = 0.58;
-    reverbBus.connect(revFilter);
-    revFilter.connect(convolver);
-    convolver.connect(masterGain);
+      // Compresseur de mastering qui rehausse les nuances douces sur haut-parleur mobile
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -20;
+      comp.knee.value = 18;
+      comp.ratio.value = 3.2;
+      comp.attack.value = 0.015;
+      comp.release.value = 0.22;
 
-    // Nappe d'orchestre à cordes continue (Violoncelles + Altos + Violons)
-    stringPadBus = ctx.createGain();
-    stringPadBus.gain.value = 0.12;
-    padFilter = ctx.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.value = 520;
-    padFilter.Q.value = 0.7;
-    stringPadBus.connect(padFilter);
-    padFilter.connect(dryBus);
-    padFilter.connect(reverbBus);
+      masterGain.connect(comp);
+      comp.connect(ctx.destination);
 
-    const baseNotes = [37, 49, 56, 61, 64]; // Accord fondamental Do#m / La
-    padOscs = baseNotes.map((midi, i) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = i < 2 ? 'sawtooth' : 'triangle';
-      osc.frequency.value = mtof(midi);
-      // Légère désaccordage d'ensemble (effet pupitre de cordes)
-      osc.detune.value = (i % 2 === 0 ? 1 : -1) * (3.5 + i * 1.2);
-      g.gain.value = i < 2 ? 0.08 : 0.055;
-      osc.connect(g);
-      g.connect(stringPadBus);
-      osc.start();
-      return { osc, gain: g };
-    });
+      dryBus = ctx.createGain();
+      dryBus.gain.value = 0.85;
+      dryBus.connect(masterGain);
 
-    nextNoteTime = ctx.currentTime + 0.08;
+      reverbBus = ctx.createGain();
+      reverbBus.gain.value = 0.52;
+      const convolver = createConcertHallIR(ctx);
+      if (convolver) {
+        const revFilter = ctx.createBiquadFilter();
+        revFilter.type = 'lowpass';
+        revFilter.frequency.value = 2800;
+        reverbBus.connect(revFilter);
+        revFilter.connect(convolver);
+        convolver.connect(masterGain);
+      } else {
+        reverbBus.gain.value = 0.25;
+        reverbBus.connect(masterGain);
+      }
+
+      // Nappe d'orchestre à cordes continue (Violoncelles + Altos + Violons)
+      stringPadBus = ctx.createGain();
+      stringPadBus.gain.value = 0.16;
+      padFilter = ctx.createBiquadFilter();
+      padFilter.type = 'lowpass';
+      padFilter.frequency.value = 680;
+      padFilter.Q.value = 0.7;
+      stringPadBus.connect(padFilter);
+      padFilter.connect(dryBus);
+      padFilter.connect(reverbBus);
+
+      const baseNotes = [37, 49, 56, 61, 64];
+      padOscs = baseNotes.map((midi, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = i < 2 ? 'sawtooth' : 'triangle';
+        osc.frequency.value = mtof(midi);
+        osc.detune.value = (i % 2 === 0 ? 1 : -1) * (3.5 + i * 1.2);
+        g.gain.value = i < 2 ? 0.09 : 0.065;
+        osc.connect(g);
+        g.connect(stringPadBus);
+        osc.start();
+        return { osc, gain: g };
+      });
+
+      nextNoteTime = ctx.currentTime + 0.04;
+    }
+    return true;
   }
 
-  // Synthèse d'une note de Piano de Concert (marteau feutré + harmoniques + table d'harmonie)
+  // Synthèse d'une note de Piano de Concert (enrichie en harmoniques médiums pour haut-parleurs mobiles)
   function playPianoNote(midi, time, duration, velocity = 0.5, pan = 0) {
     if (!ctx || !isPlaying) return;
     const freq = mtof(midi);
     const out = ctx.createGain();
-    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-    if (panner) {
-      panner.pan.setValueAtTime(clamp(pan, -0.75, 0.75), time);
-      out.connect(panner);
-      panner.connect(dryBus);
-      panner.connect(reverbBus);
-    } else {
-      out.connect(dryBus);
-      out.connect(reverbBus);
+    let dest = out;
+    if (ctx.createStereoPanner) {
+      try {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(clamp(pan, -0.75, 0.75), time);
+        out.connect(panner);
+        dest = panner;
+      } catch { }
     }
+    dest.connect(dryBus);
+    dest.connect(reverbBus);
 
-    // Filtre dynamique (plus brillant en fortissimo, très doux en pianissimo)
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
-    const peakCutoff = clamp(freq * (2.2 + velocity * 5.5), 400, 6500);
+    const peakCutoff = clamp(freq * (2.8 + velocity * 5.8), 650, 7200);
     flt.frequency.setValueAtTime(peakCutoff, time);
-    flt.frequency.exponentialRampToValueAtTime(Math.max(280, freq * 1.4), time + duration * 0.85);
+    flt.frequency.exponentialRampToValueAtTime(Math.max(380, freq * 1.6), time + duration * 0.85);
     flt.connect(out);
 
-    // Fondamentale + 2e et 3e partiels avec légère inharmonicité de corde de piano
+    // Partiels enrichis (le 2e et 3e partiel rendent les graves du piano audibles sur iPhone/Android)
     const partials = [
       { mult: 1, amp: 1.0, type: 'triangle', det: -1.5 },
-      { mult: 1, amp: 0.45, type: 'sine', det: 1.5 },
-      { mult: 2.001, amp: 0.22 * velocity, type: 'sine', det: 2.5 },
-      { mult: 3.003, amp: 0.08 * velocity * velocity, type: 'sine', det: 0 },
+      { mult: 1, amp: 0.55, type: 'sine', det: 1.5 },
+      { mult: 2.001, amp: 0.42 * (0.4 + velocity * 0.6), type: 'triangle', det: 2.2 },
+      { mult: 3.003, amp: 0.16 * velocity, type: 'sine', det: 0 },
     ];
 
     partials.forEach((p) => {
@@ -280,10 +348,10 @@ export function createClassicalSoundtrack({ onStatusChange }) {
       osc.stop(time + duration + 0.08);
     });
 
-    const amp = 0.14 * velocity;
+    const amp = 0.21 * velocity;
     out.gain.setValueAtTime(0.0001, time);
     out.gain.linearRampToValueAtTime(amp, time + 0.012);
-    out.gain.exponentialRampToValueAtTime(amp * 0.38, time + 0.18);
+    out.gain.exponentialRampToValueAtTime(amp * 0.42, time + 0.20);
     out.gain.exponentialRampToValueAtTime(0.0001, time + duration);
   }
 
@@ -294,10 +362,9 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     const out = ctx.createGain();
     const flt = ctx.createBiquadFilter();
     flt.type = 'lowpass';
-    flt.frequency.setValueAtTime(isCello ? 950 + velocity * 900 : 1600 + velocity * 1400, time);
-    flt.Q.value = isCello ? 1.4 : 1.0;
+    flt.frequency.setValueAtTime(isCello ? 1150 + velocity * 950 : 1800 + velocity * 1400, time);
+    flt.Q.value = isCello ? 1.3 : 1.0;
 
-    // Vibrato expressif (5.4 Hz)
     const vib = ctx.createOscillator();
     const vibGain = ctx.createGain();
     vib.frequency.setValueAtTime(5.4, time);
@@ -318,9 +385,9 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     vib.start(time);
     vib.stop(time + duration + 0.12);
 
-    const amp = (isCello ? 0.075 : 0.055) * velocity;
+    const amp = (isCello ? 0.105 : 0.08) * velocity;
     out.gain.setValueAtTime(0.0001, time);
-    out.gain.linearRampToValueAtTime(amp, time + Math.min(0.32, duration * 0.35));
+    out.gain.linearRampToValueAtTime(amp, time + Math.min(0.28, duration * 0.32));
     out.gain.setValueAtTime(amp * 0.85, time + duration * 0.72);
     out.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.08);
 
@@ -329,7 +396,6 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     out.connect(reverbBus);
   }
 
-  // Pizzicato de cordes (Scène 04 "Le geste" & rebonds)
   function playPizzicato(midi, time, velocity = 0.5) {
     if (!ctx || !isPlaying) return;
     const freq = mtof(midi);
@@ -339,9 +405,9 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(freq, time);
     flt.type = 'lowpass';
-    flt.frequency.setValueAtTime(freq * 3.5, time);
-    flt.frequency.exponentialRampToValueAtTime(freq * 0.9, time + 0.16);
-    const amp = 0.11 * velocity;
+    flt.frequency.setValueAtTime(freq * 3.8, time);
+    flt.frequency.exponentialRampToValueAtTime(freq * 1.1, time + 0.16);
+    const amp = 0.15 * velocity;
     g.gain.setValueAtTime(0.0001, time);
     g.gain.linearRampToValueAtTime(amp, time + 0.006);
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.24);
@@ -353,17 +419,16 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     osc.stop(time + 0.26);
   }
 
-  // Timbale symphonique douce (pour les grands sommets WOW 1 & WOW 2)
   function playTimpaniRoll(midi, time, intensity = 0.7) {
     if (!ctx || !isPlaying) return;
-    const freq = mtof(midi);
+    const freq = mtof(midi + 12); // Octave supérieure pour être perçu aussi sur mobile
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq * 1.06, time);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq * 1.08, time);
     osc.frequency.exponentialRampToValueAtTime(freq, time + 0.12);
     g.gain.setValueAtTime(0.0001, time);
-    g.gain.linearRampToValueAtTime(0.18 * intensity, time + 0.015);
+    g.gain.linearRampToValueAtTime(0.20 * intensity, time + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, time + 1.1);
     osc.connect(g);
     g.connect(reverbBus);
@@ -372,83 +437,73 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     osc.stop(time + 1.15);
   }
 
-  // Ordonnanceur musical temps réel (planifie les notes avec précision Web Audio)
   function scheduleNotes() {
-    if (!ctx || !isPlaying) return;
+    if (!ctx || !isPlaying || ctx.state !== 'running') return;
     const now = ctx.currentTime;
+    if (nextNoteTime < now || nextNoteTime > now + 2.0) {
+      nextNoteTime = now + 0.02;
+    }
 
     while (nextNoteTime < now + 0.16) {
       const secKey = getSectionKey(currentGp);
       const prog = PROGRESSIONS[secKey] || PROGRESSIONS.fil;
       const bar = prog[chordIndex % prog.length];
-      const stepInBar = stepIndex % 12; // Mesure à 12/8 ou 4/4 en triolets (comme la Sonate Clair de Lune)
+      const stepInBar = stepIndex % 12;
 
-      // Tempo adaptatif : plus allant pendant l'explosion / le geste, plus posé dans le fil / la galerie
-      let stepDur = 0.27; // durée d'une croche de triolet (~74 BPM)
+      let stepDur = 0.27;
       if (secKey === 'explosion' || secKey === 'casser') stepDur = lerp(0.24, 0.18, currentIntensity);
       else if (secKey === 'geste') stepDur = 0.21;
       else if (secKey === 'galerie') stepDur = 0.26;
       else if (secKey === 'studio') stepDur = 0.32;
-      // Légère accélération expressive quand l'utilisateur scrolle activement
       stepDur *= 1 - clamp(Math.abs(currentSpeed) * 0.025, 0, 0.16);
 
-      // 1. Basse de piano & Violoncelle sur le 1er temps de la mesure (et le 7e en forte intensité)
       if (stepInBar === 0) {
-        // Met à jour la nappe d'orchestre à cordes sur le nouvel accord
         const padNotes = [bar.bass, bar.bass + 12, ...bar.chord.slice(0, 3)];
         padOscs.forEach((p, idx) => {
           const targetMidi = padNotes[idx % padNotes.length];
           p.osc.frequency.setTargetAtTime(mtof(targetMidi), nextNoteTime, 0.18);
         });
 
-        // Basse profonde au piano (main gauche en octave si forte intensité)
-        playPianoNote(bar.bass + 12, nextNoteTime, stepDur * 11, clamp(currentIntensity * 0.85, 0.25, 0.9), -0.35);
-        if (currentIntensity > 0.58) {
-          playPianoNote(bar.bass, nextNoteTime, stepDur * 11, currentIntensity * 0.75, -0.45);
+        playPianoNote(bar.bass + 12, nextNoteTime, stepDur * 11, clamp(currentIntensity * 0.9, 0.35, 0.95), -0.35);
+        if (currentIntensity > 0.55) {
+          playPianoNote(bar.bass, nextNoteTime, stepDur * 11, currentIntensity * 0.8, -0.45);
         }
-        // Violoncelle solo (dès la Scène 02)
-        if (currentGp >= 4.5) {
-          playBowedString(bar.bass + 12, nextNoteTime, stepDur * 10.5, clamp(currentIntensity * 0.95, 0.28, 0.95), true);
+        if (currentGp >= 4.0) {
+          playBowedString(bar.bass + 12, nextNoteTime, stepDur * 10.5, clamp(currentIntensity * 0.95, 0.35, 0.95), true);
         }
-        // Timbale douce sur les apogées (Explosion WOW 1 & Casser l'œuvre WOW 2)
         if (currentIntensity > 0.80) {
           playTimpaniRoll(bar.bass, nextNoteTime, currentIntensity);
         }
-      } else if (stepInBar === 6 && currentIntensity > 0.52) {
-        playBowedString(bar.chord[0], nextNoteTime, stepDur * 5.5, currentIntensity * 0.75, true);
+      } else if (stepInBar === 6 && currentIntensity > 0.50) {
+        playBowedString(bar.chord[0], nextNoteTime, stepDur * 5.5, currentIntensity * 0.78, true);
       }
 
-      // 2. Arpèges classiques en triolets au Piano (style Beethoven Clair de Lune / Mozart Adagio)
       const arpNote = bar.chord[stepInBar % bar.chord.length];
       const octaveShift = (currentIntensity > 0.74 && stepInBar % 3 === 2) ? 12 : 0;
-      const accent = stepInBar % 3 === 0 ? 1.08 : 0.82;
-      const arpVel = clamp(currentIntensity * 0.72 * accent, 0.18, 0.85);
+      const accent = stepInBar % 3 === 0 ? 1.12 : 0.86;
+      const arpVel = clamp(currentIntensity * 0.80 * accent, 0.28, 0.92);
       const panPos = ((stepInBar % 4) - 1.5) * 0.22;
 
       if (secKey === 'geste') {
-        // Scène 04 : Pizzicati de cordes + ostinato rythmique (7e Symphonie Allegretto)
         if (stepInBar % 2 === 0) {
-          playPizzicato(arpNote, nextNoteTime, clamp(currentIntensity * 0.9, 0.35, 0.88));
+          playPizzicato(arpNote, nextNoteTime, clamp(currentIntensity * 0.92, 0.40, 0.92));
         }
-        playPianoNote(arpNote, nextNoteTime, stepDur * 2.2, arpVel * 0.85, panPos);
+        playPianoNote(arpNote, nextNoteTime, stepDur * 2.2, arpVel * 0.88, panPos);
       } else {
         playPianoNote(arpNote + octaveShift, nextNoteTime, stepDur * 3.6, arpVel, panPos);
       }
 
-      // 3. Chant mélodique (Main droite du piano + Violons solo en doublure lyrique)
-      if (stepInBar === 3 || stepInBar === 9 || (currentIntensity > 0.68 && stepInBar === 6)) {
+      if (stepInBar === 3 || stepInBar === 9 || (currentIntensity > 0.65 && stepInBar === 6)) {
         const melIdx = Math.floor(stepInBar / 3) % bar.melody.length;
         const melMidi = bar.melody[melIdx];
-        const melVel = clamp(currentIntensity * 0.92, 0.28, 0.95);
+        const melVel = clamp(currentIntensity * 0.95, 0.38, 0.98);
         playPianoNote(melMidi, nextNoteTime + 0.01, stepDur * 5.2, melVel, 0.28);
 
-        // Doublure des violons en legato dès que l'intensité monte
-        if (currentIntensity > 0.45) {
-          playBowedString(melMidi, nextNoteTime + 0.02, stepDur * 5.5, melVel * 0.82, false);
+        if (currentIntensity > 0.42) {
+          playBowedString(melMidi, nextNoteTime + 0.02, stepDur * 5.5, melVel * 0.85, false);
         }
-        // Brillance à l'octave supérieure pendant les moments WOW (Explosion / Galerie / Casser)
-        if (currentIntensity > 0.78) {
-          playPianoNote(melMidi + 12, nextNoteTime + 0.018, stepDur * 4.5, melVel * 0.65, 0.42);
+        if (currentIntensity > 0.76) {
+          playPianoNote(melMidi + 12, nextNoteTime + 0.018, stepDur * 4.5, melVel * 0.68, 0.42);
         }
       }
 
@@ -460,81 +515,82 @@ export function createClassicalSoundtrack({ onStatusChange }) {
     }
   }
 
+  function startPlaybackNow() {
+    if (!ctx) return;
+    isPlaying = true;
+    const activate = () => {
+      if (!isPlaying || userMuted) return;
+      const now = ctx.currentTime;
+      nextNoteTime = now + 0.02;
+      masterGain.gain.cancelScheduledValues(now);
+      masterGain.gain.setValueAtTime(0.95, now);
+      scheduleNotes();
+      if (onStatusChange) onStatusChange(true);
+    };
+    if (ctx.state === 'running') {
+      activate();
+    } else {
+      ctx.resume().then(activate).catch(() => { });
+      activate();
+    }
+  }
+
   return {
     get on() {
       return isPlaying;
     },
     toggle() {
-      initAudio();
-      if (!ctx) return;
       if (!isPlaying) {
         userMuted = false;
-        hasAutoStarted = true;
-        isPlaying = true;
-        ctx.resume().then(() => {
-          if (!isPlaying) return;
-          const now = ctx.currentTime;
-          nextNoteTime = now + 0.04;
-          masterGain.gain.cancelScheduledValues(now);
-          masterGain.gain.setValueAtTime(0.01, now);
-          masterGain.gain.linearRampToValueAtTime(0.85, now + 0.25);
-          scheduleNotes();
-        }).catch(() => { });
+        if (!unlockAndBuildAudio()) return;
+        startPlaybackNow();
       } else {
         userMuted = true;
-        hasAutoStarted = true;
         isPlaying = false;
-        const now = ctx.currentTime;
-        masterGain.gain.cancelScheduledValues(now);
-        masterGain.gain.setValueAtTime(0.0, now);
-        ctx.suspend().catch(() => { });
+        if (iosUnlocker && !iosUnlocker.paused) {
+          try { iosUnlocker.pause(); } catch { }
+        }
+        if (ctx && masterGain) {
+          const now = ctx.currentTime;
+          masterGain.gain.cancelScheduledValues(now);
+          masterGain.gain.setValueAtTime(0.0, now);
+          try { ctx.suspend().catch(() => { }); } catch { }
+        }
+        if (onStatusChange) onStatusChange(false);
       }
-      if (onStatusChange) onStatusChange(isPlaying);
     },
     autoStartOnGesture() {
-      if (userMuted || isPlaying || hasAutoStarted) return;
-      initAudio();
-      if (!ctx) return;
-      ctx.resume().then(() => {
-        if (userMuted || isPlaying || hasAutoStarted) return;
-        hasAutoStarted = true;
-        isPlaying = true;
-        const now = ctx.currentTime;
-        nextNoteTime = now + 0.04;
-        masterGain.gain.cancelScheduledValues(now);
-        masterGain.gain.setValueAtTime(0.01, now);
-        masterGain.gain.linearRampToValueAtTime(0.85, now + 0.35);
-        scheduleNotes();
-        if (onStatusChange) onStatusChange(true);
-      }).catch(() => { });
+      if (userMuted) return;
+      // Si l'audio tourne déjà avec un contexte actif ('running'), rien à faire
+      if (isPlaying && ctx && ctx.state === 'running') return;
+      if (!unlockAndBuildAudio()) return;
+      startPlaybackNow();
     },
     update(gp, scrollVelocity = 0) {
       currentGp = gp;
       currentSpeed = scrollVelocity;
       currentIntensity = computeDramaticIntensity(gp, scrollVelocity);
 
-      if (!ctx || !isPlaying) return;
+      if (!ctx || !isPlaying || ctx.state !== 'running') return;
       scheduleNotes();
 
-      // Filtre et volume de la nappe symphonique pilotés en continu par l'intensité du scroll
       const now = ctx.currentTime;
-      const targetCutoff = lerp(340, 2400, Math.pow(currentIntensity, 1.35));
+      const targetCutoff = lerp(460, 2600, Math.pow(currentIntensity, 1.3));
       padFilter.frequency.setTargetAtTime(targetCutoff, now, 0.12);
-      stringPadBus.gain.setTargetAtTime(lerp(0.06, 0.28, currentIntensity), now, 0.15);
+      stringPadBus.gain.setTargetAtTime(lerp(0.09, 0.30, currentIntensity), now, 0.15);
     },
     playTac(intensity = 1) {
-      if (!ctx || !isPlaying) return;
+      if (!ctx || !isPlaying || ctx.state !== 'running') return;
       const now = ctx.currentTime;
       if (now - lastTacTime < 0.14) return;
       lastTacTime = now;
-      // Percussion feutrée accordée sur la tonique (Do# / La) + pizzicato
-      playPizzicato(61, now, 0.55 * intensity);
+      playPizzicato(61, now, 0.65 * intensity);
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(138.59 * intensity, now);
       osc.frequency.exponentialRampToValueAtTime(46, now + 0.06);
-      g.gain.setValueAtTime(0.14 * intensity, now);
+      g.gain.setValueAtTime(0.18 * intensity, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
       osc.connect(g);
       g.connect(dryBus);
@@ -542,11 +598,10 @@ export function createClassicalSoundtrack({ onStatusChange }) {
       osc.stop(now + 0.07);
     },
     playChime(freq = 440) {
-      if (!ctx || !isPlaying) return;
+      if (!ctx || !isPlaying || ctx.state !== 'running') return;
       const midi = Math.round(69 + 12 * Math.log2(freq / 440));
-      playPianoNote(midi, ctx.currentTime, 1.4, 0.55, 0.1);
-      playPianoNote(midi + 7, ctx.currentTime + 0.06, 1.6, 0.42, -0.15);
+      playPianoNote(midi, ctx.currentTime, 1.4, 0.65, 0.1);
+      playPianoNote(midi + 7, ctx.currentTime + 0.06, 1.6, 0.52, -0.15);
     },
   };
 }
-
