@@ -1,15 +1,31 @@
-// Marina Lehacaut Studio — prototype gris du film interactif (storyboard v0.2).
+// Marina Lehacaut Studio — Film interactif complet (0 → 100 %).
 //
-// Principe : UNE timeline maîtresse. Tout l'état visuel (caméra, objets, textes) est une
+// Principe : UNE timeline maîtresse. Tout l'état visuel (caméra, objets, vidéos, textes) est une
 // fonction pure de la progression globale du scroll `gp` (0 → 100). On peut avancer,
 // reculer ou recharger au milieu : l'image est toujours la bonne.
-// Seules exceptions : l'ondulation au repos, la souris, et le mode interactif de la scène 07.
 //
-// 0 → 56 % : vidéos Flow V01 → V13 lues au rythme du scroll, voir FILM plus bas.
-// Ensuite : 3D (la galerie, Arcade qui se casse, le configurateur).
+// 0 → 56 %  : vidéos Flow V01 → V13 lues au rythme du scroll (+ fibres interactives en Scène 04).
+// 55.6 → 77 % : WebGL / Three.js temps réel (Arcade V13 sculpté en laine bouclée,
+//               Galerie architecturale ivoire, Casser l'œuvre, Configurateur & Vue Salon).
+// 77 → 94.5 % : Vidéos & séquences macro d'atelier à Colombes (Scènes 08 & 09).
+// 94.5 → 100 % : Le Studio, fiches œuvres, réservation d'ateliers & Tiroir Panier.
 
 import * as THREE from './vendor/three.module.min.js';
 import Lenis from './vendor/lenis.mjs';
+import {
+  WOOL,
+  WOOL_LABELS,
+  normalizePlanarUVs,
+  createMuseumEnvMap,
+  createWoolTextures,
+  createPlasterTexture,
+  createArcadeZones,
+  createArcadePhotoMesh,
+  renderArcadeSVG,
+  buildIvoryGallery,
+  createFloatingFibers,
+} from './rugs3d.js?v=8';
+import { createClassicalSoundtrack } from './classicalAudio.js?v=8';
 
 // ---------------------------------------------------------------- timeline
 const SCENES = [
@@ -18,21 +34,15 @@ const SCENES = [
   { id: '03', name: "L'explosion", a: 15, b: 30 },
   { id: '04', name: 'Le geste', a: 30, b: 43 },
   { id: '05', name: 'Arcade naît', a: 43, b: 55 },
-  { id: '06', name: 'La galerie impossible', a: 55, b: 67 },
+  { id: '06', name: 'La galerie ivoire', a: 55, b: 67 },
   { id: '07', name: "Casser l'œuvre", a: 67, b: 77 },
   { id: '08', name: 'Du digital au réel', a: 77, b: 86 },
-  { id: '09', name: "L'atelier", a: 86, b: 94 },
-  { id: '10', name: 'Le studio', a: 94, b: 100 },
+  { id: '09', name: "L'atelier", a: 86, b: 94.5 },
+  { id: '10', name: 'Le studio', a: 94.5, b: 100 },
 ];
 
-// Couleurs provisoires : à remplacer par les vraies laines des œuvres.
-const WOOL = {
-  rouge: '#C8372D', orange: '#E8762C', bleu: '#2F5DA8', rose: '#E9A0B5',
-  jaune: '#F2C230', ecru: '#EDE6DA', sauge: '#7F9A7A', encre: '#1E1C1A',
-};
-const PALETTE5 = [WOOL.rouge, WOOL.orange, WOOL.bleu, WOOL.rose, WOOL.jaune];
 const ECRU = new THREE.Color('#EEE9E1');
-const GALERIE = new THREE.Color('#E6E0D6');
+const GALERIE_BG = new THREE.Color('#EFE8DC');
 
 // ---------------------------------------------------------------- utilitaires
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -46,212 +56,499 @@ let seed = 7;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const rr = (a, b) => a + rand() * (b - a);
 
-// ---------------------------------------------------------------- rendu
+// ---------------------------------------------------------------- rendu 3D
 const canvas = document.getElementById('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(ECRU, 1, 100);
-const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 260);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8074, 1.3));
-const key = new THREE.DirectionalLight(0xffffff, 1.8);
-key.position.set(4, 7, 6);
-scene.add(key);
-const rake = new THREE.DirectionalLight(0xfff1dd, 0.9); // lumière rasante : fait ressortir la laine
-rake.position.set(-8, 1, 1.5);
-scene.add(rake);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// Texture « laine » procédurale (bosses), partagée par tous les objets textiles.
-function woolTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 256;
-  const g = c.getContext('2d');
-  g.fillStyle = '#808080';
-  g.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 2600; i++) {
-    const v = 90 + Math.random() * 110;
-    g.strokeStyle = `rgb(${v},${v},${v})`;
-    g.lineWidth = 1 + Math.random() * 2;
-    const x = Math.random() * 256, y = Math.random() * 256;
-    g.beginPath(); g.moveTo(x, y); g.lineTo(x + 3 + Math.random() * 5, y + (Math.random() - 0.5) * 3); g.stroke();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  return t;
-}
-const WOOL_TEX = woolTexture();
-const woolMat = (color, repeat = 4) => {
-  const tex = WOOL_TEX.clone();
-  tex.repeat.set(repeat, repeat);
-  tex.needsUpdate = true;
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.95, bumpMap: tex, bumpScale: 1.4 });
+const scene = new THREE.Scene();
+scene.environment = createMuseumEnvMap(renderer, scene);
+scene.fog = new THREE.Fog(ECRU, 22, 135);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 260);
+
+// Éclairage architectural chaud (lumière de baie vitrée V13 + lumière rasante pour sculpter la laine)
+scene.add(new THREE.HemisphereLight(0xfffcf5, 0xc8bca8, 1.25));
+const key = new THREE.DirectionalLight(0xfffdf6, 1.45);
+key.position.set(-16, 18, -310);
+key.target.position.set(0, -2, -328);
+key.castShadow = true;
+key.shadow.mapSize.width = 1024;
+key.shadow.mapSize.height = 1024;
+key.shadow.camera.near = 2;
+key.shadow.camera.far = 95;
+key.shadow.camera.left = -22;
+key.shadow.camera.right = 22;
+key.shadow.camera.top = 18;
+key.shadow.camera.bottom = -18;
+key.shadow.bias = -0.0008;
+scene.add(key);
+scene.add(key.target);
+
+const rake = new THREE.DirectionalLight(0xffeed4, 0.95); // lumière rasante latérale : révèle les boucles
+rake.position.set(-9, 2.5, 2.5);
+scene.add(rake);
+const fill = new THREE.DirectionalLight(0xf6f0e6, 0.55);
+fill.position.set(6, -3, 5);
+scene.add(fill);
+
+// Vraies textures PBR Poly Haven (boucles de laine `curly_teddy_natural` + stuc minéral)
+const { diffTex: WOOL_DIFF, bumpTex: WOOL_BUMP, roughTex: WOOL_ROUGH } = createWoolTextures();
+const PLASTER_TEX = createPlasterTexture();
+
+const woolMat = (color, repeat = 3.5) => {
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    map: WOOL_DIFF,
+    roughness: 0.86,
+    roughnessMap: WOOL_ROUGH,
+    metalness: 0.0,
+    normalMap: WOOL_BUMP,
+    normalScale: new THREE.Vector2(1.35, 1.35),
+    sheen: 0.68,
+    sheenRoughness: 0.70,
+    sheenColor: new THREE.Color('#FFF7EA'),
+  });
 };
 
-// ---------------------------------------------------------------- souris
-const mouse = { x: 0, y: 0, sx: 0, sy: 0, px: -1, py: -1, has: false };
+// ---------------------------------------------------------------- souris & tactile
+const mouse = { x: 0, y: 0, sx: 0, sy: 0, px: innerWidth / 2, py: innerHeight / 2, has: false };
 addEventListener('pointermove', (e) => {
   mouse.x = (e.clientX / innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / innerHeight) * 2 + 1;
   mouse.px = e.clientX; mouse.py = e.clientY; mouse.has = true;
 });
+addEventListener('touchmove', (e) => {
+  if (!e.touches.length) return;
+  const t = e.touches[0];
+  mouse.x = (t.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(t.clientY / innerHeight) * 2 + 1;
+  mouse.px = t.clientX; mouse.py = t.clientY; mouse.has = true;
+}, { passive: true });
 
 const C = V(0, 0, -300); // centre de l'œuvre dans l'espace 3D
 const raycaster = new THREE.Raycaster();
 
 // =====================================================================
-// 05 → 07 — ARCADE (zones géométriques = mêmes fichiers que le configurateur)
+// 05 → 07 — ARCADE Nº01 (zones géométriques fidèles à V13)
 // =====================================================================
-// Motif provisoire : à remplacer par la vectorisation réelle d'Arcade.
-const archShape = (w, bottom, top) => {
-  const s = new THREE.Shape();
-  s.moveTo(-w, bottom); s.lineTo(w, bottom); s.lineTo(w, top); s.absarc(0, top, w, 0, Math.PI, false); s.lineTo(-w, bottom);
-  return s;
-};
-const rectShape = (x0, y0, x1, y1) => { const s = new THREE.Shape(); s.moveTo(x0, y0); s.lineTo(x1, y0); s.lineTo(x1, y1); s.lineTo(x0, y1); s.lineTo(x0, y0); return s; };
-const circleShape = (x, y, r) => { const s = new THREE.Shape(); s.absarc(x, y, r, 0, Math.PI * 2, false); return s; };
-const ZONES = [
-  { key: 'A', name: 'Fond', shape: rectShape(-1, -1, 1, 1), color: WOOL.bleu, demo: WOOL.jaune, mono: '#E7E0D4', z: 0, form: 2, explode: V(0, 0, -2.2), rot: V(0, 0.25, 0) },
-  { key: 'B', name: 'Arche', shape: archShape(0.62, -0.78, 0.12), color: WOOL.orange, demo: WOOL.rose, mono: '#DDD4C5', z: 1, form: 1, explode: V(-2.1, 0.5, 1.2), rot: V(0.2, -0.4, 0.1) },
-  { key: 'C', name: 'Arche int.', shape: archShape(0.33, -0.78, 0.08), color: WOOL.rose, demo: WOOL.rouge, mono: '#EEE8DE', z: 2, form: 2, explode: V(1.9, 0.9, 2.4), rot: V(-0.2, 0.5, -0.1) },
-  { key: 'D', name: 'Soleil', shape: circleShape(0, 0.05, 0.15), color: WOOL.jaune, demo: WOOL.ecru, mono: '#D6CCBB', z: 3, form: 2, explode: V(0.4, 2.6, 3.4), rot: V(0.4, 0.3, 0) },
-  { key: 'E', name: 'Socle', shape: rectShape(-1, -1, 1, -0.78), color: WOOL.rouge, demo: WOOL.bleu, mono: '#D0C6B4', z: 4, form: 2, explode: V(0, -2.5, 0.9), rot: V(-0.4, 0, 0.15) },
-];
-const ARC_SIZE = 2.3; // demi-côté en unités monde
+const ZONES = createArcadeZones();
+const ARC_SIZE = 2.15;
 const arcade = new THREE.Group();
 arcade.position.copy(C);
 scene.add(arcade);
-const zoneMeshes = ZONES.map((z, i) => {
-  const geo = new THREE.ExtrudeGeometry(z.shape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.012, bevelSegments: 2, curveSegments: 48 });
-  const mat = woolMat(z.mono, 1.5);
-  mat.transparent = true;
-  const m = new THREE.Mesh(geo, mat);
-  m.userData = { zone: i };
-  const holder = new THREE.Group(); // holder = position de base ; m = relief (scale.z)
+
+// Toile de fond / semelle textile au dos d'Arcade
+const backingGeo = new THREE.BoxGeometry(2.0 * ARC_SIZE, 2.36 * ARC_SIZE, 0.045);
+const backingMat = new THREE.MeshStandardMaterial({ color: '#18253B', roughness: 0.95 });
+const backingMesh = new THREE.Mesh(backingGeo, backingMat);
+backingMesh.position.z = -0.025;
+arcade.add(backingMesh);
+
+// Ombre portée murale douce (utilisée notamment en mode "Voir dans un salon")
+const shadowCanvas = document.createElement('canvas');
+shadowCanvas.width = shadowCanvas.height = 128;
+const sg = shadowCanvas.getContext('2d');
+const sGrad = sg.createRadialGradient(64, 64, 18, 64, 64, 62);
+sGrad.addColorStop(0, 'rgba(20, 14, 8, 0.42)');
+sGrad.addColorStop(0.65, 'rgba(20, 14, 8, 0.16)');
+sGrad.addColorStop(1, 'rgba(20, 14, 8, 0.0)');
+sg.fillStyle = sGrad;
+sg.fillRect(0, 0, 128, 128);
+const wallShadowMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(2.55 * ARC_SIZE, 2.9 * ARC_SIZE),
+  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(shadowCanvas), transparent: true, opacity: 0.55, depthWrite: false })
+);
+wallShadowMesh.position.set(0.14, -0.16, -0.12);
+arcade.add(wallShadowMesh);
+
+const zoneMeshes = [];
+ZONES.forEach((z, i) => {
+  const holder = new THREE.Group();
   holder.scale.set(ARC_SIZE, ARC_SIZE, ARC_SIZE);
-  holder.add(m);
+  const mat = woolMat(z.color, 3.0);
+
+  const meshes = z.shapes.map((sh) => {
+    const geo = new THREE.ExtrudeGeometry(sh, {
+      depth: z.depth || 0.12,
+      bevelEnabled: true,
+      bevelThickness: 0.024,
+      bevelSize: 0.016,
+      bevelSegments: 3,
+      curveSegments: 48,
+    });
+    normalizePlanarUVs(geo, -1.0, 1.0, -1.18, 1.18);
+    const m = new THREE.Mesh(geo, mat);
+    m.userData = { zone: i };
+    m.castShadow = true;
+    m.receiveShadow = true;
+    holder.add(m);
+    zoneMeshes.push(m);
+    return m;
+  });
+
   arcade.add(holder);
-  z.holder = holder; z.mesh = m; z.user = null;
-  return m;
+  z.holder = holder;
+  z.meshes = meshes;
+  z.mat = mat;
+  z.user = null;
+  z.pulse = 0;
 });
-arcade.userData.work = { name: 'ARCADE Nº01', info: 'Œuvre textile · 51 × 51 cm', price: '1 400 €', url: '/oeuvres/arcade' };
+
+// Plaque photographique V13 haute définition (affichée tant que l'œuvre est assemblée et non recolorée)
+const arcadePhotoMesh = createArcadePhotoMesh(2.0 * ARC_SIZE, 2.36 * ARC_SIZE);
+arcade.add(arcadePhotoMesh);
+
+arcade.userData.work = {
+  id: 'arcade',
+  name: 'ARCADE Nº01',
+  info: 'Œuvre textile signature · dès 51 × 51 cm · Laine de Nouvelle-Zélande',
+  price: '1 400 €',
+  priceNum: 1400,
+  dims: '51 × 51 cm · 70 × 70 cm · 90 × 90 cm',
+  url: '#oeuvres/arcade',
+  desc: 'Pièce maîtresse du studio. Ses arches imbriquées mêlent bouclé serré et velours ciselé aux ciseaux, créant des sillons d’ombre qui dialoguent avec la lumière du jour.',
+  palette: [WOOL.corail, WOOL.marine, WOOL.ocre, WOOL.rose, WOOL.ecru],
+};
 
 // =====================================================================
-// 06 — LA GALERIE IMPOSSIBLE
+// 06 — LA GALERIE ARCHITECTURALE V13 (BLENDER 5.2 CYCLES + PBR)
 // =====================================================================
 const galerie = new THREE.Group();
 scene.add(galerie);
-const archi = new THREE.MeshStandardMaterial({ color: '#D5CDBF', roughness: 1 });
-const archi2 = new THREE.MeshStandardMaterial({ color: '#C9C0B1', roughness: 1 });
-const lineMat = new THREE.LineBasicMaterial({ color: '#8F877A' });
 const G = (x, y, z) => V(C.x + x, C.y + y, C.z + z);
-function arch(x, y, z, s, ry = 0) {
-  const g = new THREE.Group();
-  const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 4, 0.4), archi); p1.position.set(-1.6, 0, 0);
-  const p2 = p1.clone(); p2.position.x = 1.6;
-  const top = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.2, 8, 32, Math.PI), archi); top.position.y = 2;
-  g.add(p1, p2, top);
-  g.position.copy(G(x, y, z)); g.scale.setScalar(s); g.rotation.y = ry;
-  galerie.add(g);
-}
-arch(-6, -1, -4, 1.6, 0.4); arch(7, 0, -12, 2.2, -0.5); arch(-2, 1, -44, 2.8, 0.2); arch(9, 3, -52, 1.4, 0.8);
-for (let i = 0; i < 14; i++) { // dalles suspendues
-  const m = new THREE.Mesh(new THREE.BoxGeometry(rr(2, 7), 0.12, rr(1.5, 4)), i % 2 ? archi : archi2);
-  m.position.copy(G((rand() > 0.5 ? 1 : -1) * rr(6, 14), rr(-5, 7), rr(-60, 4))); m.rotation.set(rr(-0.2, 0.2), rr(0, 3), rr(-0.15, 0.15));
-  galerie.add(m);
-}
-for (let i = 0; i < 9; i++) { // escalier qui ne mène nulle part
-  const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 0.9), archi);
-  m.position.copy(G(-9 + i * 0.2, -4 + i * 0.55, -26 - i * 0.9));
-  galerie.add(m);
-}
-function work(data, x, y, z, ry) {
-  const g = new THREE.Group();
-  g.position.copy(G(x, y, z)); g.rotation.y = ry;
-  g.userData.work = data; g.userData.ry = ry;
-  galerie.add(g);
-  return g;
-}
-const cubix = work({ name: 'CUBIX', info: 'Pièce unique · 70 × 70 cm', price: '1 900 €', url: '/oeuvres/cubix' }, -7, 1.5, -18, 0.45);
-for (let i = 0; i < 9; i++) {
-  const d = i % 2 ? 0.28 : 0.14;
-  const m = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, d), woolMat(PALETTE5[(i * 2) % 5], 1));
-  m.position.set(((i % 3) - 1) * 1.2, (Math.floor(i / 3) - 1) * 1.2, d / 2);
-  cubix.add(m);
-}
-cubix.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(5.4, 5.4, 5.4)), lineMat));
-const vortex = work({ name: 'VORTEX', info: 'Personnalisable · dès 51 × 51 cm', price: 'dès 890 €', url: '/oeuvres/vortex' }, 7, -0.5, -34, -0.5);
-for (let i = 0; i < 7; i++) {
-  const m = new THREE.Mesh(new THREE.RingGeometry(0.25 + i * 0.28, 0.5 + i * 0.28, 64, 1, i * 0.4, Math.PI * 2 - 0.25), woolMat(PALETTE5[i % 5], 1));
-  m.material.side = THREE.DoubleSide; m.position.z = i * 0.03;
-  vortex.add(m);
-}
-for (let i = 0; i < 16; i++) { // spirale de plans autour de Vortex
-  const a = i * 0.55, r = 3.2 + i * 0.12;
-  const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.08), archi2);
-  m.position.set(Math.cos(a) * r, Math.sin(a) * r, -1 - i * 0.25); m.rotation.z = a;
-  vortex.add(m);
-}
-const strates = work({ name: 'STRATES', info: 'Pièce unique · 90 × 60 cm', price: '2 100 €', url: '/oeuvres/strates' }, -3, 4, -48, 0.3);
-for (let i = 0; i < 7; i++) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3.4, 0.14 + (i % 3) * 0.08), woolMat(PALETTE5[(i + 2) % 5], 1));
-  m.position.x = (i - 3) * 0.55;
-  strates.add(m);
-}
-const delta = work({ name: 'DELTA', info: 'Personnalisable · 70 × 70 cm', price: 'dès 1 190 €', url: '/oeuvres/delta' }, 4, 2, -58, -0.2);
-for (let i = 0; i < 6; i++) {
-  const s = new THREE.Shape(); s.moveTo(-0.8, -0.7); s.lineTo(0.8, -0.7); s.lineTo(0, 0.7); s.lineTo(-0.8, -0.7);
-  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.15, bevelEnabled: false }), woolMat(PALETTE5[i % 5], 1));
-  m.position.set(((i % 3) - 1) * 1.1, (i < 3 ? 0.7 : -0.7), 0); if (i >= 3) m.rotation.z = Math.PI;
-  delta.add(m);
-}
-const WORKS = [arcade, cubix, vortex, strates, delta];
-// Trajet caméra dans la galerie (positions / cibles).
-const galPos = new THREE.CatmullRomCurve3([G(0, 0, 11), G(6, 2.5, 16), G(-2.5, 1.5, -6), G(2.5, -0.2, -24), G(-0.5, 3, -38), G(1.5, 2, -47), G(0, 16, -18), G(0, 0, 11)]);
-const galLook = new THREE.CatmullRomCurve3([G(0, 0, 0), G(-1, 0, -12), G(-7, 1.5, -18), G(7, -0.5, -34), G(-3, 4, -48), G(4, 2, -58), G(0, 0, -26), G(0, 0, 0)]);
+const S = G(0, 0.20, -40.0); // Sanctuaire au fond de la nef où trône ARCADE Nº01 (fin Scène 06 -> Scène 07)
+
+const { works: WORKS, arcadeEntrance } = buildIvoryGallery({
+  scene,
+  galerie,
+  G,
+  woolMat,
+  plasterTex: PLASTER_TEX,
+  arcade,
+  ARC_SIZE,
+});
+
+const fibers = createFloatingFibers(scene, C);
 
 // =====================================================================
-// 07 — CONFIGURATEUR (état)
+// 04 — FIBRES DE LAINE QUI SUIVENT LE CURSEUR (STORYBOARD § 04)
+// =====================================================================
+const fxCanvas = document.getElementById('fx-fibers');
+const fxCtx = fxCanvas.getContext('2d');
+const cursorStrands = Array.from({ length: 18 }, (_, i) => ({
+  x: innerWidth / 2,
+  y: innerHeight / 2,
+  vx: 0,
+  vy: 0,
+  angle: (i / 18) * Math.PI * 2,
+  len: 14 + (i % 4) * 5,
+  curve: (i % 2 === 0 ? 1 : -1) * (3 + (i % 3) * 2),
+  color: [WOOL.corail, WOOL.ocre, WOOL.rose, WOOL.ecru, WOOL.marine][i % 5],
+  lag: 0.04 + (i % 6) * 0.015,
+  radius: 16 + (i % 5) * 11,
+}));
+
+function updateCursorFibers(gp, time) {
+  const active = (gp >= 30 && gp < 43.2) || (gp >= 67 && gp < 77 && cfg.interactive);
+  fxCanvas.style.visibility = active ? 'visible' : 'hidden';
+  if (!active) return;
+
+  fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  const dpr = Math.min(devicePixelRatio, 2);
+  fxCtx.save();
+  fxCtx.scale(dpr, dpr);
+
+  // Point d'attraction vers la ligne en cours de tufting au centre de la toile
+  const settleMix = gp >= 35 && gp < 42.5 ? 0.18 : 0.0;
+  const targetBaseX = lerp(mouse.px, innerWidth * 0.5, settleMix);
+  const targetBaseY = lerp(mouse.py, innerHeight * 0.5, settleMix);
+
+  cursorStrands.forEach((st, i) => {
+    const orbitA = time * (0.8 + (i % 3) * 0.25) + i * 1.1;
+    const tx = targetBaseX + Math.cos(orbitA) * st.radius;
+    const ty = targetBaseY + Math.sin(orbitA) * st.radius;
+    st.vx = (st.vx + (tx - st.x) * st.lag) * 0.82;
+    st.vy = (st.vy + (ty - st.y) * st.lag) * 0.82;
+    st.x += st.vx;
+    st.y += st.vy;
+    st.angle += 0.015 + (st.vx * 0.004);
+
+    fxCtx.save();
+    fxCtx.translate(st.x, st.y);
+    fxCtx.rotate(st.angle);
+    fxCtx.strokeStyle = st.color;
+    fxCtx.lineWidth = 2.2;
+    fxCtx.lineCap = 'round';
+    fxCtx.globalAlpha = 0.78;
+    fxCtx.beginPath();
+    fxCtx.moveTo(-st.len * 0.5, 0);
+    fxCtx.quadraticCurveTo(0, st.curve, st.len * 0.5, 0);
+    fxCtx.stroke();
+    fxCtx.restore();
+  });
+
+  fxCtx.restore();
+}
+
+// Trajet caméra Steadicam 100 % fluide et cohérent vers l'avant (Z : +10.2 -> -29.2)
+// Zéro retour arrière, zéro plongée au plafond, zéro obstacle dans la nef centrale
+const galPos = new THREE.CatmullRomCurve3([
+  G(0.0,   0.10,  10.2), // 0.00 : Raccord exact avec la fin de V13 face à Arcade d'entrée (Z = 0)
+  G(0.55,  0.18,   2.2), // 0.16 : Avance douce le long du parquet Point de Hongrie
+  G(0.65,  0.20,  -3.8), // 0.33 : Cadre CUBIX Nº04 (baie gauche 1, Z = -9.5)
+  G(-0.60, 0.20, -11.2), // 0.50 : Cadre VORTEX Nº02 (baie droite 2, Z = -17.5)
+  G(0.60,  0.22, -19.0), // 0.67 : Cadre STRATES Nº01 (baie gauche 3, Z = -25.5)
+  G(-0.50, 0.22, -25.2), // 0.84 : Cadre DELTA Nº03 (baie droite 4, Z = -32.5)
+  G(0.0,   0.20, -29.2), // 1.00 : Arrivée face au Sanctuaire d'ARCADE Nº01 (S.z + 10.8)
+]);
+const galLook = new THREE.CatmullRomCurve3([
+  G(0.0,   0.10,   0.0), // 0.00 : Regarde Arcade d'entrée (Z = 0)
+  G(-1.8,  0.18,  -5.8), // 0.16 : Regard doux vers la première baie
+  G(-2.8,  0.20,  -9.8), // 0.33 : Admire CUBIX Nº04
+  G(2.8,   0.20, -17.6), // 0.50 : Admire VORTEX Nº02
+  G(-2.7,  0.26, -25.6), // 0.67 : Admire STRATES Nº01
+  G(2.6,   0.20, -32.6), // 0.84 : Admire DELTA Nº03
+  G(0.0,   0.20, -40.0), // 1.00 : Regarde ARCADE Nº01 au centre du Sanctuaire (S)
+]);
+
+// =====================================================================
+// 07 — CONFIGURATEUR & MISE EN SITUATION SALON (état)
 // =====================================================================
 const FORMATS = [
   { label: '51 × 51 cm', scale: 1, price: 690 },
-  { label: '70 × 70 cm', scale: 1.18, price: 1190 },
-  { label: '90 × 90 cm', scale: 1.36, price: 1790 },
-  { label: 'Sur mesure', scale: 1.1, price: null },
+  { label: '70 × 70 cm', scale: 1.16, price: 1190 },
+  { label: '90 × 90 cm', scale: 1.32, price: 1790 },
+  { label: 'Sur mesure (devis)', scale: 1.12, price: null },
 ];
-const cfg = { interactive: false, created: false, zone: 1, format: 0, explode: 0, target: 1, scale: 1, pulse: 0 };
+const cfg = { interactive: false, created: false, interior: false, zone: 1, format: 0, explode: 0, target: 1, scale: 1, pulse: 0 };
 
 // =====================================================================
-// DOM
+// DOM & INTERACTIONS
 // =====================================================================
 const $ = (s) => document.querySelector(s);
 const timed = [...document.querySelectorAll('[data-in], [data-out]')].map((el) => ({
   el, a: parseFloat(el.dataset.in ?? '-1'), b: parseFloat(el.dataset.out ?? '101'),
   f: parseFloat(el.dataset.fade ?? '0.5'),
 }));
-const hud = { scene: $('#hud-scene'), pct: $('#hud-pct'), bar: $('#hud-bar'), cursor: $('#hud-cursor') };
-for (const s of SCENES) {
-  const sp = document.createElement('span');
-  sp.style.width = `${s.b - s.a}%`; sp.textContent = s.id; sp.title = `${s.id} — ${s.name}`;
-  sp.onclick = (e) => { e.stopPropagation(); goTo(s.a + 0.01); };
-  hud.bar.appendChild(sp);
-}
-hud.bar.addEventListener('click', (e) => { const r = hud.bar.getBoundingClientRect(); goTo(((e.clientX - r.left) / r.width) * 100); });
 addEventListener('keydown', (e) => {
-  if (e.key === 'h' || e.key === 'H') $('#hud').classList.toggle('off');
-  if (e.key === 'Escape') skip();
+  if (e.key === 'Escape') {
+    if (!$('#work-modal').hidden) closeModal();
+    else if (!$('#cart-drawer').hidden) closeCartDrawer();
+    else skip();
+  }
 });
+
 const toastEl = $('#toast');
 let toastT;
-function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
-document.addEventListener('click', (e) => { const a = e.target.closest('[data-toast]'); if (a) { e.preventDefault(); toast(a.dataset.toast); } });
-$('#sound').onclick = () => toast('Son : non inclus dans le prototype');
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove('on'), 2600);
+}
 
+// Liens de navigation rapide par chapitre
+document.addEventListener('click', (e) => {
+  const jumpEl = e.target.closest('[data-jump]');
+  if (jumpEl) {
+    e.preventDefault();
+    if (cfg.interactive) leaveConfig(false);
+    goTo(parseFloat(jumpEl.dataset.jump), false);
+    return;
+  }
+  const a = e.target.closest('[data-toast]');
+  if (a) { e.preventDefault(); toast(a.dataset.toast); }
+});
+$('#nav-home').onclick = (e) => { e.preventDefault(); goTo(0, false); };
+
+// =====================================================================
+// AMBIANCE MUSICALE CLASSIQUE & SYMPHONIQUE AU SCROLL (Beethoven / Mozart)
+// =====================================================================
+const soundBtn = $('#sound');
+const soundSys = createClassicalSoundtrack({
+  onStatusChange(playing) {
+    soundBtn.textContent = playing ? '♪ couper la musique' : '♪ activer la musique';
+    soundBtn.classList.toggle('on', playing);
+  },
+});
+soundBtn.textContent = '♪ activer la musique';
+['pointerdown', 'mousedown', 'touchstart'].forEach((ev) => {
+  soundBtn.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+});
+soundBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  soundSys.toggle();
+  toast(soundSys.on ? 'Symphonie interactive activée' : 'Musique coupée');
+});
+
+// Démarre l'ambiance musicale classique dès le premier geste hors bouton #sound
+['pointerdown', 'touchstart', 'keydown'].forEach((ev) => {
+  addEventListener(ev, (e) => {
+    if (e.target && e.target.closest && e.target.closest('#sound')) return;
+    soundSys.autoStartOnGesture();
+  }, { passive: true });
+});
+
+// =====================================================================
+// TIROIR PANIER SHOPIFY & MODAL FICHE ŒUVRE / ATELIER
+// =====================================================================
+const cartItems = [];
+const cartDrawerEl = $('#cart-drawer');
+const cartItemsEl = $('#cart-items');
+const cartTotalEl = $('#cart-total');
+
+function parsePriceNumber(priceStr) {
+  if (!priceStr) return 0;
+  const digits = String(priceStr).replace(/[^\d]/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+
+function addToCart(item) {
+  cartItems.push(item);
+  $('#cart-count').textContent = cartItems.length;
+  renderCartDrawer();
+  soundSys.playChime(587.33);
+}
+
+function renderCartDrawer() {
+  if (!cartItems.length) {
+    cartItemsEl.innerHTML = `<div class="cart-empty">Votre panier est vide.<br>Explorez la galerie ou créez votre pièce sur mesure.</div>`;
+    cartTotalEl.textContent = '0 €';
+    return;
+  }
+  let total = 0;
+  cartItemsEl.innerHTML = '';
+  cartItems.forEach((it, idx) => {
+    total += it.priceNum || 0;
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    const swHtml = (it.swatches || []).map((c) => `<i style="background:${c}"></i>`).join('');
+    row.innerHTML = `
+      <div>
+        <div class="cart-item-title">${it.title}</div>
+        <div class="cart-item-meta">${it.meta}</div>
+        ${swHtml ? `<div class="cart-item-swatches">${swHtml}</div>` : ''}
+      </div>
+      <div class="cart-item-right">
+        <div class="cart-item-price">${it.priceLabel}</div>
+        <button class="cart-item-rm" data-rm="${idx}">Retirer</button>
+      </div>
+    `;
+    cartItemsEl.appendChild(row);
+  });
+  cartItemsEl.querySelectorAll('[data-rm]').forEach((btn) => {
+    btn.onclick = () => {
+      cartItems.splice(parseInt(btn.dataset.rm, 10), 1);
+      $('#cart-count').textContent = cartItems.length;
+      renderCartDrawer();
+    };
+  });
+  cartTotalEl.textContent = total > 0 ? `${total.toLocaleString('fr-FR')} €` : 'Sur devis';
+}
+
+function openCartDrawer() {
+  renderCartDrawer();
+  cartDrawerEl.hidden = false;
+}
+function closeCartDrawer() {
+  cartDrawerEl.hidden = true;
+}
+$('#cart-btn').onclick = openCartDrawer;
+$('#cart-close').onclick = closeCartDrawer;
+$('#cart-close-bg').onclick = closeCartDrawer;
+$('#cart-checkout').onclick = () => {
+  if (!cartItems.length) {
+    toast('Ajoutez une œuvre ou un atelier avant de commander');
+    return;
+  }
+  closeCartDrawer();
+  toast(`Redirection vers le paiement sécurisé Shopify (${cartTotalEl.textContent})…`);
+};
+
+const modalEl = $('#work-modal');
+let currentModalWork = null;
+
+function openWorkModal(workData) {
+  currentModalWork = workData;
+  $('#modal-tag').textContent = workData.isWorkshop ? 'ATELIER TUFTING — COLOMBES' : 'ŒUVRE TEXTILE TISSÉE MAIN';
+  $('#modal-title').textContent = workData.name;
+  $('#modal-meta').textContent = workData.info || workData.dims || '';
+  $('#modal-desc').textContent = workData.desc || '';
+  $('#modal-price').textContent = workData.price || '';
+
+  const palEl = $('#modal-palette');
+  palEl.innerHTML = '';
+  if (workData.palette && workData.palette.length) {
+    palEl.hidden = false;
+    workData.palette.forEach((hex) => {
+      const s = document.createElement('span');
+      s.style.background = hex;
+      palEl.appendChild(s);
+    });
+  } else {
+    palEl.hidden = true;
+  }
+
+  $('#modal-customize').hidden = !!workData.isWorkshop;
+  $('#modal-add-cart').textContent = workData.isWorkshop ? 'Réserver ce créneau' : 'Ajouter au panier';
+  modalEl.hidden = false;
+}
+
+function closeModal() {
+  modalEl.hidden = true;
+}
+$('#modal-close').onclick = closeModal;
+$('#modal-close-bg').onclick = closeModal;
+$('#open-arcade-card').onclick = () => openWorkModal(arcade.userData.work);
+
+$('#modal-customize').onclick = () => {
+  closeModal();
+  goTo(71.5, false);
+  setTimeout(() => enterConfig(), 450);
+};
+$('#modal-add-cart').onclick = () => {
+  if (!currentModalWork) return;
+  addToCart({
+    title: currentModalWork.name,
+    meta: currentModalWork.info || currentModalWork.dims || 'Atelier Colombes',
+    priceLabel: currentModalWork.price || 'Sur devis',
+    priceNum: parsePriceNumber(currentModalWork.price),
+    swatches: currentModalWork.palette || [],
+  });
+  closeModal();
+  openCartDrawer();
+};
+
+// Cartes d'ateliers (Scène 09)
+document.querySelectorAll('.offer-card').forEach((card) => {
+  card.onclick = () => {
+    openWorkModal({
+      isWorkshop: true,
+      name: `ATELIER ${card.querySelector('b').textContent.toUpperCase()}`,
+      info: `${card.querySelector('span').textContent} · Atelier Marina Lehacaut, Colombes`,
+      price: card.querySelector('em').textContent,
+      desc: 'Prenez en main le tufting gun dans notre atelier lumineux de Colombes. Laines de Nouvelle-Zélande, toile tendue, collage et finitions aux ciseaux inclus. Vous repartez avec votre création.',
+    });
+  };
+});
+$('#btn-book-atelier').onclick = () => {
+  openWorkModal({
+    isWorkshop: true,
+    name: 'ATELIER CRÉATION (4 H)',
+    info: 'Format 50 × 50 cm · Samedi 14h ou Mercredi 18h30 · 4 places max',
+    price: '145 €',
+    desc: 'Initiez-vous au geste du tufting aux côtés de Marina à Colombes. Dessinez votre motif, choisissez vos cônes de laine, plantez vos boucles et sculptez le relief de votre pièce.',
+  });
+};
 
 // =====================================================================
 // TEXTES DU FILM — accroches animées, pilotées par le scroll
 // =====================================================================
-// Chaque .beat a une plage [data-a, data-b] (en % de scroll). Sa progression q (0 → 1)
-// donne : entrée (0 → 0,35), tenue, sortie (0,72 → 1). Le texte reste dans le HTML (SEO).
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 function splitWords(el) {
   const out = [];
@@ -277,7 +574,6 @@ function splitWords(el) {
 }
 function splitChars(el) {
   const out = [];
-  // Les lettres d'un même mot restent groupées : la ligne ne se coupe qu'entre deux mots.
   const add = (text, parent) => {
     text.split(/(\s+)/).forEach((word) => {
       if (!word) return;
@@ -323,7 +619,6 @@ function updateBeats(gp) {
         p.style.transform = `translateY(${(1 - e) * 115 - x * 115}%) rotate(${(1 - e) * 6}deg)`;
       });
     } else if (b.fx === 'letters') {
-      // Explosion inversée : les lettres arrivent de partout et se rassemblent, puis repartent.
       const n = b.parts.length;
       b.parts.forEach((p, i) => {
         const e = easeOut(range(enter, (i / n) * 0.45, (i / n) * 0.45 + 0.55));
@@ -338,7 +633,6 @@ function updateBeats(gp) {
       const n = b.parts.length;
       b.parts.forEach((p, i) => { p.style.opacity = (enter * n > i ? 1 : 0) * (1 - exit); });
     } else if (b.fx === 'mask') {
-      // Le mot se découvre de gauche à droite en se resserrant, puis s'efface par la gauche.
       const e = easeOut(enter);
       st.clipPath = `inset(0 ${(1 - e) * 100}% 0 ${exit * 100}%)`;
       st.letterSpacing = `${(1 - e) * 0.25 - 0.035}em`;
@@ -374,37 +668,93 @@ function updateRetention(gp, now) {
   chapterEl.style.visibility = gp > 1.2 && gp < 94 ? 'visible' : 'hidden';
   threadFill.style.transform = `scaleY(${gp / 100})`;
   threadBob.style.top = `calc(${gp}% - 7px)`;
-  // Si le visiteur s'arrête plus de 3,5 s, on lui donne envie de voir la suite.
   if (Math.abs(gp - lastGp) > 0.01) { lastGp = gp; lastMove = now; }
   const idle = now - lastMove > 3500 && gp > 1.5 && gp < 93 && !cfg.interactive;
   if (idle && SCENES[si + 1]) nudgeEl.querySelector('span').textContent = SCENES[si + 1].name;
   nudgeEl.classList.toggle('on', idle);
 }
 
-// Configurateur
-const zonesEl = $('#zones'), swEl = $('#swatches'), fmtEl = $('#formats');
+// =====================================================================
+// CONFIGURATEUR 3D & VUE SALON (Scène 07)
+// =====================================================================
+const zonesEl = $('#zones'), swEl = $('#swatches'), fmtEl = $('#formats'), swNameEl = $('#swatch-name');
+const interiorBgEl = $('#interior-bg'), interiorBtn = $('#cfg-interior');
+
+function setInteriorMode(on) {
+  cfg.interior = on;
+  interiorBgEl.classList.toggle('on', on);
+  interiorBtn.textContent = on ? 'Vue éclatée 3D' : 'Voir dans un salon';
+  if (on) {
+    cfg.target = 0; // rassemble les pièces sur le mur du salon
+  } else if (!cfg.created) {
+    cfg.target = 1;
+  }
+}
+
+interiorBtn.onclick = () => {
+  enterConfig();
+  setInteriorMode(!cfg.interior);
+  soundSys.playChime(cfg.interior ? 493.88 : 392.0);
+};
+
 ZONES.forEach((z, i) => {
-  const b = document.createElement('button'); b.textContent = `${z.key} · ${z.name}`;
-  b.onclick = () => { enterConfig(); cfg.zone = i; refreshCfg(); };
+  const b = document.createElement('button');
+  b.textContent = `${z.key} · ${z.name}`;
+  b.onclick = () => {
+    enterConfig();
+    cfg.zone = i;
+    ZONES[i].pulse = 1;
+    soundSys.playChime(330 + i * 45);
+    refreshCfg();
+  };
   zonesEl.appendChild(b);
 });
-for (const [name, hex] of Object.entries(WOOL)) {
-  const b = document.createElement('button'); b.style.background = hex; b.title = name;
-  b.onclick = () => { enterConfig(); ZONES[cfg.zone].user = hex; };
+
+for (const [keyName, hex] of Object.entries(WOOL)) {
+  const b = document.createElement('button');
+  b.style.background = hex;
+  b.dataset.hex = hex;
+  b.dataset.key = keyName;
+  b.title = WOOL_LABELS[keyName] || keyName;
+  b.onclick = () => {
+    enterConfig();
+    ZONES[cfg.zone].user = hex;
+    ZONES[cfg.zone].pulse = 1.2;
+    swNameEl.textContent = WOOL_LABELS[keyName] || keyName;
+    soundSys.playTac(1.2);
+    renderArcadeSVG($('#studio-art'), ZONES);
+    refreshCfg();
+  };
   swEl.appendChild(b);
 }
+
 FORMATS.forEach((f, i) => {
-  const b = document.createElement('button'); b.textContent = f.label;
-  b.onclick = () => { enterConfig(); cfg.format = i; cfg.pulse = 1; refreshCfg(); };
+  const b = document.createElement('button');
+  b.textContent = f.label;
+  b.onclick = () => {
+    enterConfig();
+    cfg.format = i;
+    cfg.pulse = 1;
+    soundSys.playChime(440 + i * 60);
+    refreshCfg();
+  };
   fmtEl.appendChild(b);
 });
+
 function refreshCfg() {
   [...zonesEl.children].forEach((b, i) => b.classList.toggle('on', i === cfg.zone));
+  const activeColor = (ZONES[cfg.zone].user || ZONES[cfg.zone].color).toLowerCase();
+  [...swEl.children].forEach((b) => {
+    const match = b.dataset.hex.toLowerCase() === activeColor;
+    b.classList.toggle('on', match);
+    if (match) swNameEl.textContent = b.title;
+  });
   [...fmtEl.children].forEach((b, i) => b.classList.toggle('on', i === cfg.format));
   const f = FORMATS[cfg.format];
   $('#price').textContent = f.price ? `${f.price.toLocaleString('fr-FR')} €` : 'Sur devis';
 }
 refreshCfg();
+
 function enterConfig() {
   if (cfg.interactive) return;
   cfg.interactive = true; cfg.created = false; cfg.target = 1;
@@ -413,42 +763,97 @@ function enterConfig() {
   $('#cfg-continue').hidden = false; $('#cfg-done').hidden = true;
   document.body.classList.add('cfg-on');
 }
-function leaveConfig() {
+function leaveConfig(jumpNext = true) {
   cfg.interactive = false;
+  setInteriorMode(false);
   lenis.start();
   $('#cfg-continue').hidden = true;
   document.body.classList.remove('cfg-on');
-  goTo(77.2);
+  if (jumpNext) goTo(77.2, false);
 }
 $('#cfg-start').onclick = enterConfig;
 $('#cfg-create').onclick = () => {
   enterConfig();
-  // Les couleurs non choisies prennent celles de la démonstration.
   const t = local(gp, 6);
   ZONES.forEach((z) => { if (!z.user) z.user = t > 0.3 ? z.demo : z.color; });
   cfg.target = 0; cfg.created = true;
+  const f = FORMATS[cfg.format];
+  $('#cfg-summary').textContent = `Format ${f.label} · ${f.price ? f.price.toLocaleString('fr-FR') + ' €' : 'Sur devis'} · Tufté à la main sous 3 à 4 semaines à Colombes.`;
   $('#cfg-done').hidden = false;
+  renderArcadeSVG($('#studio-art'), ZONES);
+  soundSys.playChime(523.25);
 };
-$('#cfg-cart').onclick = () => { const n = $('#cart-count'); n.textContent = +n.textContent + 1; toast('Arcade personnalisé ajouté au panier (factice)'); };
-$('#cfg-continue').onclick = leaveConfig;
+$('#cfg-reset').onclick = () => {
+  ZONES.forEach((z) => { z.user = z.color; z.pulse = 0.8; });
+  renderArcadeSVG($('#studio-art'), ZONES);
+  refreshCfg();
+  toast('Palette originale Arcade Nº01 restaurée');
+};
+$('#cfg-reedit').onclick = () => {
+  cfg.created = false;
+  cfg.target = cfg.interior ? 0 : 1;
+  $('#cfg-done').hidden = true;
+};
+$('#cfg-cart').onclick = () => {
+  const f = FORMATS[cfg.format];
+  addToCart({
+    title: 'ARCADE Nº01 — SUR MESURE',
+    meta: `Format ${f.label} · Palette personnalisée (6 zones)`,
+    priceLabel: f.price ? `${f.price.toLocaleString('fr-FR')} €` : 'Sur devis',
+    priceNum: f.price || 0,
+    swatches: ZONES.map((z) => z.user || z.color),
+  });
+  openCartDrawer();
+};
+$('#cfg-continue').onclick = () => leaveConfig(true);
 
-// Scène 10 : l'œuvre en SVG
-$('#studio-art').innerHTML = `
-  <rect x="-1" y="-1" width="2" height="2" fill="${WOOL.bleu}"/>
-  <path d="M-.62 .78 L.62 .78 L.62 -.12 A.62 .62 0 0 0 -.62 -.12 Z" fill="${WOOL.orange}"/>
-  <path d="M-.33 .78 L.33 .78 L.33 -.08 A.33 .33 0 0 0 -.33 -.08 Z" fill="${WOOL.rose}"/>
-  <circle cx="0" cy="-.05" r=".15" fill="${WOOL.jaune}"/>
-  <rect x="-1" y=".78" width="2" height=".22" fill="${WOOL.rouge}"/>`;
+// Scène 10 : l'œuvre Arcade en SVG vectoriel fidèle à V13
+renderArcadeSVG($('#studio-art'), ZONES);
 
-const SHOTS = ['La main de Marina.', 'Le tufting gun pique la toile.', 'La laine, les bobines.', 'La colle étalée au dos.', 'La découpe.', 'Le rasage.', 'Les fibres qui volent.', 'Le tapis terminé, retourné.'];
+// =====================================================================
+// SCÈNES 08 & 09 : VRAIES VIDÉOS MACRO & PHOTOGRAPHIES D'ATELIER
+// =====================================================================
+const SHOTS_08 = [
+  { src: 'media/atelier/s08-01-main.jpg', text: 'La main de Marina effleure la toile de coton tendue.' },
+  { src: 'media/atelier/s08-02-pistolet.jpg', text: 'Le tufting gun pique la toile et plante les boucles corail et marine.' },
+  { src: 'media/atelier/s08-03-bobines.jpg', text: 'Les cônes de laine de Nouvelle-Zélande alimentent le cadre.' },
+  { src: 'media/atelier/s08-04-colle.jpg', text: 'Le latex naturel est étalé à la spatule au dos de l’œuvre.' },
+  { src: 'media/atelier/s08-05-decoupe.jpg', text: 'La pièce est libérée du cadre aux ciseaux de tailleur.' },
+  { src: 'media/atelier/s08-06-rasage.jpg', text: 'Chaque zone est sculptée et biseautée à la tondeuse.' },
+  { src: 'media/atelier/s08-07-fibres.jpg', text: 'Les fibres de laine s’envolent dans la lumière de Colombes.' },
+  { src: 'media/atelier/s08-08-tapis.jpg', text: 'L’œuvre terminée est retournée sur l’établi.' },
+];
+
+const SHOTS_09 = [
+  { src: 'media/atelier/s09-01-etabli.jpg', text: "Le tufting gun est posé sur l'établi de Colombes. La caméra s'approche." },
+  { src: 'media/atelier/s09-02-saisie.jpg', text: 'Votre main entre dans le cadre et saisit le pistolet.' },
+  { src: 'media/atelier/s09-03-creation.jpg', text: 'Face à la toile blanche tendue : à vous de tracer votre œuvre.' },
+];
+
+const realStillsEl = $('#real-stills');
+const realStillNodes = SHOTS_08.map((s) => {
+  const d = document.createElement('div');
+  d.className = 'still';
+  d.style.backgroundImage = `url('${s.src}')`;
+  realStillsEl.appendChild(d);
+  return d;
+});
+
+const atelierStillsEl = $('#atelier-stills');
+const atelierStillNodes = SHOTS_09.map((s) => {
+  const d = document.createElement('div');
+  d.className = 'still';
+  d.style.backgroundImage = `url('${s.src}')`;
+  atelierStillsEl.appendChild(d);
+  return d;
+});
+
+const vidReal = $('#vid-real');
+const vidAtelier = $('#vid-atelier');
 
 // =====================================================================
 // FILM — vidéos Flow pilotées par le scroll (0 → 56 %)
 // =====================================================================
-// Chaque plan occupe une plage du scroll ; sa position dans la plage donne son temps.
-// Deux encodages par plan, avec des images clés très rapprochées pour pouvoir sauter
-// à n'importe quelle image sans saccade : WebM/VP9 (Chrome, Firefox) et MP4/H.264
-// « toutes images clés » (Safari). Entre deux plans : fondu enchaîné court.
 const CLIPS = [
   { src: 'media/v01-fil', a: 0, b: 5 },
   { src: 'media/v02-matiere', a: 5, b: 10 },
@@ -464,7 +869,7 @@ const CLIPS = [
   { src: 'media/v12-matiere', a: 48, b: 53 },
   { src: 'media/v13-arcade-flotte', a: 53, b: 56 },
 ];
-const XF = 0.35; // durée du fondu enchaîné, en % de scroll
+const XF = 0.42;
 const filmEl = document.getElementById('film');
 for (const c of CLIPS) {
   const v = document.createElement('video');
@@ -476,21 +881,21 @@ for (const c of CLIPS) {
   filmEl.appendChild(v);
   c.el = v;
 }
-// iOS n'affiche une vidéo scrubbée qu'après une première lecture déclenchée par un geste.
-addEventListener('touchstart', () => { for (const c of CLIPS) c.el.play().then(() => c.el.pause()).catch(() => {}); }, { once: true, passive: true });
+addEventListener('touchstart', () => {
+  for (const c of CLIPS) c.el.play().then(() => c.el.pause()).catch(() => { });
+  [vidReal, vidAtelier].forEach((v) => v && v.play().then(() => v.pause()).catch(() => { }));
+}, { once: true, passive: true });
 
 function updateFilm(gp) {
   const on = gp < CLIPS[CLIPS.length - 1].b + XF;
   filmEl.style.visibility = on ? 'visible' : 'hidden';
   if (!on) return;
-  // Légère parallaxe à la souris : la matière « respire ».
   filmEl.style.transform = `scale(1.04) translate(${-mouse.sx * 0.8}%, ${mouse.sy * 0.6}%)`;
   CLIPS.forEach((c, i) => {
     const last = i === CLIPS.length - 1;
-    const o = Math.min(i === 0 ? 1 : range(gp, c.a - XF, c.a), last ? 1 - range(gp, c.b, c.b + XF) : 1);
+    const o = Math.min(i === 0 ? 1 : range(gp, c.a - XF, c.a), last ? 1 - range(gp, c.b - 0.15, c.b + XF) : 1);
     const visible = gp >= c.a - XF && gp < c.b + XF;
     c.el.style.opacity = visible ? o : 0;
-    // Le plan suivant se pose par-dessus le précédent : pas de creux de luminosité.
     c.el.style.zIndex = i;
     if (!visible || !c.el.duration || c.el.seeking) return;
     const t = range(gp, c.a, c.b) * (c.el.duration - 0.05);
@@ -504,26 +909,29 @@ function updateFilm(gp) {
 const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
 const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
 function goTo(pct, immediate = true) { lenis.scrollTo((clamp(pct, 0, 100) / 100) * maxScroll(), { immediate, force: true }); }
-function skip() { goTo(55, false); try { localStorage.setItem('mls-seen', '1'); } catch {} }
+function skip() { goTo(55.8, false); try { localStorage.setItem('mls-seen', '1'); } catch { } }
 $('#skip').onclick = skip;
 const params = new URLSearchParams(location.search);
 if (params.has('p')) requestAnimationFrame(() => goTo(parseFloat(params.get('p'))));
-else { try { if (localStorage.getItem('mls-seen') && !params.has('intro')) requestAnimationFrame(() => goTo(55)); } catch {} }
-addEventListener('scroll', () => { if (gp > 50) { try { localStorage.setItem('mls-seen', '1'); } catch {} } }, { passive: true });
+else { try { if (localStorage.getItem('mls-seen') && !params.has('intro')) requestAnimationFrame(() => goTo(55.8)); } catch { } }
+addEventListener('scroll', () => { if (gp > 50) { try { localStorage.setItem('mls-seen', '1'); } catch { } } }, { passive: true });
 
 // =====================================================================
-// Boucle
+// Boucle principale
 // =====================================================================
 let gp = 0, currentExplode = 0, hovered = null, last = performance.now();
-const tmpV = new THREE.Vector3(), tmpC = new THREE.Color(), bg = new THREE.Color();
+const tmpC = new THREE.Color(), bg = new THREE.Color();
 const monoC = new THREE.Color(), baseC = new THREE.Color();
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
-  // En portrait, on recule un peu pour garder les œuvres entières.
   camera.fov = camera.aspect < 0.8 ? 62 : 45;
   camera.updateProjectionMatrix();
+
+  const dpr = Math.min(devicePixelRatio, 2);
+  fxCanvas.width = innerWidth * dpr;
+  fxCanvas.height = innerHeight * dpr;
 }
 addEventListener('resize', resize);
 resize();
@@ -533,112 +941,181 @@ function frame(now) {
   const time = now / 1000;
   lenis.raf(now);
   gp = clamp((lenis.scroll / Math.max(1, maxScroll())) * 100, 0, 100);
+  soundSys.update(gp, lenis.velocity || 0);
   mouse.sx += (mouse.x - mouse.sx) * Math.min(1, dt * 2.5);
   mouse.sy += (mouse.y - mouse.sy) * Math.min(1, dt * 2.5);
 
   const P = SCENES.map((_, i) => local(gp, i));
   const up = V(0, 1, 0);
-  let camPos = V(0, 0, 10), look = V(0, 0, 0), roll = 0;
+  let camPos = V(C.x, C.y, C.z + 10.6), look = V(C.x, C.y, C.z), roll = 0;
 
-  // ---------------- fond, brouillard
-  bg.copy(ECRU).lerp(GALERIE, smooth(55, 58, gp) * (1 - smooth(66, 68, gp)));
-  renderer.setClearColor(bg);
+  if (Math.abs(gp - 35.2) < 0.18 || Math.abs(gp - 36.7) < 0.22) {
+    soundSys.playTac(1.0);
+  }
+
+  // ---------------- fond, brouillard ivoire chaud (ou transparent en mode Salon)
+  bg.copy(ECRU).lerp(GALERIE_BG, smooth(55, 58, gp) * (1 - smooth(66, 68, gp)));
+  const inSalon = cfg.interactive && cfg.interior && gp >= 66.5 && gp < 77.5;
+  renderer.setClearColor(bg, inSalon ? 0 : 1);
   scene.fog.color.copy(bg);
-  if (gp >= 55 && gp < 67) { scene.fog.near = 10; scene.fog.far = lerp(15, 75, smooth(55, 58.5, gp)); } // la galerie se découvre
-  else { scene.fog.near = 14; scene.fog.far = 120; }
+  scene.fog.near = 65;
+  scene.fog.far = 165;
+  if (!inSalon && interiorBgEl.classList.contains('on')) {
+    interiorBgEl.classList.remove('on');
+    cfg.interior = false;
+  }
 
-  // ---------------- visibilités (on ne dessine que ce qui sert)
-  arcade.visible = gp >= 55.6 && gp < 77.5;
-  galerie.visible = gp >= 55.6 && gp < 68;
+  // ---------------- visibilités WebGL (54.8 → 77.5 %)
+  arcade.visible = gp >= 54.8 && gp < 77.5;
+  galerie.visible = gp >= 54.8 && gp < 77.5 && !inSalon;
+  fibers.update(time, mouse, gp);
+  updateCursorFibers(gp, time);
 
-  // ================= 01 → 04 début — FILM (vidéos Flow)
+  // ================= 01 → 05 — FILM (vidéos Flow)
   updateFilm(gp);
 
-  // ================= ARCADE (05 → 07)
+  // ================= ARCADE D'ENTRÉE (Raccord V13 à Z = 0) & ARCADE SANCTUAIRE (S à Z = -40)
+  if (arcadeEntrance) {
+    const p6 = P[5];
+    arcadeEntrance.visible = gp >= 54.8 && gp < 63.0 && !inSalon;
+    const v13Tilt = -(1 - smooth(55.4, 57.4, gp)) * 0.142;
+    const stepAside = smooth(0.03, 0.22, p6);
+    arcadeEntrance.position.set(
+      C.x - 3.85 * stepAside,
+      C.y + 0.10 + Math.sin(time * 0.7) * 0.04,
+      C.z - 1.5 * stepAside
+    );
+    arcadeEntrance.userData.baseY = C.y + 0.10;
+    arcadeEntrance.userData.ry = 0.32 * stepAside;
+    if (hovered !== arcadeEntrance) {
+      arcadeEntrance.rotation.set(
+        -mouse.sy * 0.05,
+        arcadeEntrance.userData.ry + mouse.sx * 0.07,
+        v13Tilt
+      );
+    }
+  }
+
+  // ================= ARCADE SANCTUAIRE & SCÈNE 07 (Casser l'œuvre / Configurateur)
   if (arcade.visible) {
-    const p5 = P[4], p7 = P[6];
-    // Éclatement : piloté par le scroll… ou par le visiteur en mode interactif.
+    const p5 = P[4], p6 = P[5], p7 = P[6];
     let explode;
     if (cfg.interactive) {
-      cfg.explode += (cfg.target + cfg.pulse * 0.6 - cfg.explode) * Math.min(1, dt * 3);
-      cfg.pulse = Math.max(0, cfg.pulse - dt * 1.6);
+      cfg.explode += (cfg.target + cfg.pulse * 0.45 - cfg.explode) * Math.min(1, dt * 3.2);
+      cfg.pulse = Math.max(0, cfg.pulse - dt * 1.8);
       explode = cfg.explode;
     } else {
-      explode = easeInOut(range(p7, 0.05, 0.3)) * (1 - easeInOut(range(p7, 0.85, 0.97)));
+      explode = easeInOut(range(p7, 0.05, 0.32)) * (1 - easeInOut(range(p7, 0.84, 0.97)));
     }
     currentExplode = explode;
-    const fmtScale = cfg.interactive || cfg.created ? FORMATS[cfg.format].scale : 1;
-    cfg.scale += (fmtScale - cfg.scale) * Math.min(1, dt * 4);
+    const baseFmtScale = cfg.interactive || cfg.created ? FORMATS[cfg.format].scale : 1;
+    const salonScale = inSalon ? baseFmtScale * 0.68 : baseFmtScale;
+    cfg.scale += (salonScale - cfg.scale) * Math.min(1, dt * 4);
     arcade.scale.setScalar(cfg.scale);
 
+    // Bascule nette sans artefact de transparence :
+    // Quand l'œuvre est assemblée et en couleurs d'origine, la plaque photographique V13 est devant (z = 0.20) ;
+    // Dès qu'elle s'éclate (explode > 0.015) ou est personnalisée en Scène 07, les 6 zones 3D sculptées prennent le relais
+    const hasCustom = ZONES.some((z) => z.user !== null);
+    const demoColorShift = gp >= 67 ? smooth(0.28, 0.38, p7) : 0;
+    const showZones = explode > 0.015 || hasCustom || demoColorShift > 0.02 || cfg.interactive;
+    arcadePhotoMesh.visible = !showZones;
+
+    backingMesh.position.z = -0.04 - explode * 2.4;
+    backingMesh.scale.setScalar(1 - explode * 0.10);
+    wallShadowMesh.visible = explode < 0.25;
+    wallShadowMesh.material.opacity = (1 - explode * 4) * (inSalon ? 0.68 : 0.35);
+
     ZONES.forEach((z, i) => {
-      // Forme 1 (arche) puis formes 2, couleur, volume.
-      const appear = z.form === 1 ? smooth(0.02, 0.2, p5) : smooth(0.2 + i * 0.03, 0.3 + i * 0.03, p5);
-      const colorT = smooth(0.4 + i * 0.025, 0.47 + i * 0.025, p5);
-      const vol = lerp(0.12, 1, smooth(0.55, 0.7, p5));
-      z.mesh.material.opacity = appear;
-      z.mesh.visible = appear > 0.001;
-      z.mesh.scale.set(1, 1, Math.max(0.02, vol * appear));
-      monoC.set(z.mono); baseC.set(z.color);
-      tmpC.copy(monoC).lerp(baseC, colorT);
+      z.pulse = Math.max(0, (z.pulse || 0) - dt * 2.4);
+      z.holder.visible = showZones;
+      const pulseBoost = 1 + (z.pulse || 0) * 0.28;
+
+      z.meshes.forEach((m) => {
+        m.scale.set(1, 1, Math.max(0.05, pulseBoost));
+      });
+
+      baseC.set(z.color);
+      tmpC.copy(baseC);
       if (gp >= 67) {
         if (z.user) tmpC.set(z.user);
-        else tmpC.lerp(new THREE.Color(z.demo), smooth(0.32 + i * 0.04, 0.4 + i * 0.04, p7));
+        else tmpC.lerp(new THREE.Color(z.demo), smooth(0.32 + i * 0.04, 0.42 + i * 0.04, p7));
       }
-      z.mesh.material.color.lerp(tmpC, Math.min(1, dt * 8));
-      const sel = cfg.interactive && !cfg.created && i === cfg.zone;
-      z.mesh.material.emissive.set(sel ? '#3a2a10' : '#000000');
-      z.holder.position.set(z.explode.x * explode, z.explode.y * explode, 0.07 + z.z * 0.035 + z.explode.z * explode);
+      z.mat.color.lerp(tmpC, Math.min(1, dt * 8));
+      const sel = cfg.interactive && !cfg.created && !inSalon && i === cfg.zone;
+      z.mat.emissive.set(sel ? '#2c1d0b' : '#000000');
+
+      const zOff = 0.04 + z.z * 0.018 + z.explode.z * explode + (z.pulse || 0) * 0.25;
+      z.holder.position.set(z.explode.x * explode, z.explode.y * explode, zOff);
       z.holder.rotation.set(z.rot.x * explode, z.rot.y * explode, z.rot.z * explode);
     });
-    // Flotter : légère respiration + souris (une fois l'œuvre terminée).
-    const floatOn = smooth(0.7, 0.85, p5);
-    arcade.rotation.set(-mouse.sy * 0.12 * floatOn + Math.sin(time * 0.5) * 0.02 * floatOn, mouse.sx * 0.18 * floatOn, 0);
-    arcade.position.copy(C);
-    arcade.position.y += Math.sin(time * 0.7) * 0.06 * floatOn;
-    if (gp >= 55 && gp < 67) arcade.position.x += -3.8 * smooth(0, 0.18, P[5]) * (1 - smooth(0.86, 1, P[5]));
+
+    const floatOn = inSalon ? 0.15 : 1.0;
+    arcade.rotation.set(
+      -mouse.sy * 0.09 * floatOn + Math.sin(time * 0.55) * 0.018 * floatOn,
+      mouse.sx * 0.14 * floatOn,
+      0
+    );
+    arcade.position.copy(S);
+    arcade.position.y += inSalon ? 0.65 : Math.sin(time * 0.7) * 0.05 * floatOn;
 
     if (gp >= 67) {
       const p = p7;
-      // Laisse la place au panneau : à gauche sur ordinateur, en bas sur mobile.
-      const panelShift = camera.aspect < 0.8 ? V(0, -3.2, 4) : V(-3, 0, 0);
+      const panelShift = camera.aspect < 0.8 ? V(0, -3.2, 4) : V(inSalon ? -1.6 : -2.8, 0, 0);
       if (cfg.interactive) {
-        const a = mouse.sx * 0.5, d = 13 + 2 * cfg.scale;
-        camPos.copy(C).add(V(Math.sin(a) * d, mouse.sy * 1.2, Math.cos(a) * d)).add(panelShift);
-        look.copy(C).add(panelShift);
+        const a = mouse.sx * (inSalon ? 0.12 : 0.48);
+        const d = inSalon ? 12.2 : 12.4 + 1.6 * cfg.scale;
+        camPos.copy(S).add(V(Math.sin(a) * d, mouse.sy * (inSalon ? 0.35 : 1.05), Math.cos(a) * d)).add(panelShift);
+        look.copy(S).add(panelShift);
       } else {
-        const a = 0.85 * Math.sin(Math.PI * smooth(0.05, 0.8, p));
-        const d = 11 + 3 * Math.sin(Math.PI * smooth(0.05, 0.85, p));
-        const shift = panelShift.clone().multiplyScalar(smooth(0.2, 0.35, p));
-        camPos.copy(C).add(V(Math.sin(a) * d, 0.8 * Math.sin(a * 0.7), Math.cos(a) * d)).add(shift);
-        look.copy(C).add(shift);
+        const a = 0.68 * Math.sin(Math.PI * smooth(0.05, 0.82, p));
+        const d = 10.8 + 2.2 * Math.sin(Math.PI * smooth(0.05, 0.85, p));
+        const shift = panelShift.clone().multiplyScalar(smooth(0.18, 0.34, p));
+        camPos.copy(S).add(V(Math.sin(a) * d, 0.55 * Math.sin(a * 0.7), Math.cos(a) * d)).add(shift);
+        look.copy(S).add(shift);
       }
     }
   }
 
-  // ================= 06 — LA GALERIE IMPOSSIBLE
-  if (gp >= 55 && gp < 67) {
+  // ================= 06 — LA GALERIE ARCHITECTURALE V13 (Promenade Steadicam fluide)
+  if (gp >= 54.8 && gp < 67) {
     const p = P[5];
-    const t = easeInOut(p) * 0.98 + p * 0.02;
-    camPos.copy(galPos.getPoint(t)).add(V(mouse.sx * 0.5, mouse.sy * 0.3, 0));
-    look.copy(galLook.getPoint(t));
+    const t = smooth(0, 1, p);
+    camPos.copy(galPos.getPoint(t)).add(V(mouse.sx * 0.32, mouse.sy * 0.18, 0));
+    look.copy(galLook.getPoint(t)).add(V(mouse.sx * 0.18, mouse.sy * 0.12, 0));
   }
-  // Survol des œuvres
+
+  // Survol des œuvres dans la galerie
   let hit = null;
-  if (mouse.has && (gp >= 56.4 && gp < 67) && !cfg.interactive) {
+  if (mouse.has && (gp >= 55.6 && gp < 67) && !cfg.interactive && modalEl.hidden && cartDrawerEl.hidden) {
     raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera);
     const hits = raycaster.intersectObjects(WORKS, true);
-    if (hits.length) { let o = hits[0].object; while (o && !o.userData.work) o = o.parent; hit = o; }
+    if (hits.length) {
+      let o = hits[0].object;
+      while (o && !o.userData.work) o = o.parent;
+      hit = o;
+    }
   }
   hovered = hit;
-  for (const w of WORKS) if (w !== arcade) w.rotation.y += ((w === hovered ? w.userData.ry * 0.3 : w.userData.ry) - w.rotation.y) * Math.min(1, dt * 4);
+  for (const w of WORKS) {
+    if (w !== arcade && w !== arcadeEntrance) {
+      const targetRy = w === hovered ? w.userData.ry * 0.35 : w.userData.ry;
+      w.rotation.y += (targetRy - w.rotation.y) * Math.min(1, dt * 4.5);
+      w.position.y = w.userData.baseY + Math.sin(time * 0.8 + w.position.x) * 0.04;
+    }
+  }
   const tip = $('#tip');
   if (hovered) {
     const w = hovered.userData.work;
-    tip.innerHTML = `<b>${w.name}</b>${w.info}<br>${w.price} · voir →`;
-    tip.style.left = `${mouse.px + 18}px`; tip.style.top = `${mouse.py + 18}px`; tip.style.opacity = 1;
+    tip.innerHTML = `<b>${w.name}</b>${w.info}<br><strong>${w.price}</strong> · Cliquer pour explorer →`;
+    tip.style.left = `${Math.min(innerWidth - 260, mouse.px + 18)}px`;
+    tip.style.top = `${Math.min(innerHeight - 90, mouse.py + 18)}px`;
+    tip.style.opacity = 1;
     canvas.style.cursor = 'pointer';
-  } else { tip.style.opacity = 0; canvas.style.cursor = ''; }
+  } else {
+    tip.style.opacity = 0;
+    canvas.style.cursor = gp >= 67 && gp < 77 ? 'grab' : '';
+  }
 
   // ================= caméra
   camera.position.copy(camPos);
@@ -646,7 +1123,7 @@ function frame(now) {
   camera.lookAt(look);
   if (roll) camera.rotateZ(roll);
 
-  // ================= DOM
+  // ================= DOM & Scènes 08–09
   updateBeats(gp);
   updateRetention(gp, now);
   for (const t of timed) {
@@ -656,33 +1133,71 @@ function frame(now) {
     t.el.style.opacity = o;
     t.el.style.visibility = o > 0.001 ? 'visible' : 'hidden';
   }
-  if (gp >= 77 && gp < 86) {
-    const i = Math.min(7, Math.floor(P[7] * 8));
-    $('#shot-n').textContent = String(i + 1).padStart(2, '0');
-    $('#shot-t').textContent = SHOTS[i];
-  }
-  if (gp >= 86 && gp < 94.5) {
-    const p = P[8];
-    $('#atelier-t').textContent = p < 0.3 ? "Le tufting gun est posé sur l'établi. La caméra s'approche." : p < 0.55 ? 'Une autre main entre dans le cadre et le saisit.' : 'La main du participant, le pistolet, la toile.';
+
+  // Scène 08 — Du digital au réel (77 → 86 %)
+  if (gp >= 76.8 && gp < 86.2) {
+    const p8 = P[7];
+    const idx = Math.min(SHOTS_08.length - 1, Math.floor(p8 * SHOTS_08.length));
+    $('#shot-n').textContent = String(idx + 1).padStart(2, '0');
+    $('#shot-t').textContent = SHOTS_08[idx].text;
+    $('#shot-bar-fill').style.width = `${(p8 * 100).toFixed(1)}%`;
+
+    if (vidReal && vidReal.duration && !vidReal.seeking) {
+      const vt = p8 * (vidReal.duration - 0.05);
+      if (Math.abs(vidReal.currentTime - vt) > 1 / 30) vidReal.currentTime = vt;
+    }
+    realStillNodes.forEach((node, i) => {
+      const active = i === idx;
+      node.style.opacity = active ? 0.88 : 0;
+      if (active) {
+        const subP = (p8 * SHOTS_08.length) - idx;
+        const sc = 1.02 + subP * 0.05;
+        node.style.transform = `scale(${sc.toFixed(3)}) translate(${(-mouse.sx * 0.6).toFixed(2)}%, ${(mouse.sy * 0.4).toFixed(2)}%)`;
+      }
+    });
   }
 
-  // HUD
-  const si = Math.max(0, SCENES.findIndex((s) => gp < s.b));
-  hud.scene.textContent = `${SCENES[si].id} — ${SCENES[si].name}`;
-  hud.pct.textContent = `${gp.toFixed(1)} %  ·  p ${P[si].toFixed(2)}${cfg.interactive ? '  ·  CONFIG' : ''}`;
-  hud.cursor.style.left = `${gp}%`;
+  // Scène 09 — L'atelier (86 → 94.5 %)
+  if (gp >= 85.8 && gp < 94.6) {
+    const p9 = P[8];
+    const idx = p9 < 0.32 ? 0 : p9 < 0.62 ? 1 : 2;
+    $('#atelier-t').textContent = SHOTS_09[idx].text;
 
-  if ((gp >= 55.6 && gp < 77.3) || cfg.interactive) renderer.render(scene, camera);
+    if (vidAtelier && vidAtelier.duration && !vidAtelier.seeking) {
+      const vt = p9 * (vidAtelier.duration - 0.05);
+      if (Math.abs(vidAtelier.currentTime - vt) > 1 / 30) vidAtelier.currentTime = vt;
+    }
+    atelierStillNodes.forEach((node, i) => {
+      const active = i === idx;
+      node.style.opacity = active ? 0.88 : 0;
+      if (active) {
+        const sc = 1.03 + (p9 * 0.05);
+        node.style.transform = `scale(${sc.toFixed(3)}) translate(${(-mouse.sx * 0.6).toFixed(2)}%, ${(mouse.sy * 0.4).toFixed(2)}%)`;
+      }
+    });
+  }
+
+  if ((gp >= 54.8 && gp < 77.5) || cfg.interactive) renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 
-// Clic dans la galerie / sur les zones
+// Clic dans la galerie (ouvre la fiche œuvre) ou sur les zones d'Arcade (Scène 07)
 canvas.addEventListener('click', () => {
-  if (hovered) { toast(`→ zoom dans l'œuvre, puis fiche produit ${hovered.userData.work.url}`); return; }
+  if (hovered && hovered.userData.work) {
+    soundSys.playChime(523.25);
+    openWorkModal(hovered.userData.work);
+    return;
+  }
   if (gp >= 67 && gp < 77) {
     raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), camera);
     const h = raycaster.intersectObjects(zoneMeshes, false)[0];
-    if (h) { enterConfig(); cfg.zone = h.object.userData.zone; refreshCfg(); }
+    if (h) {
+      enterConfig();
+      cfg.zone = h.object.userData.zone;
+      ZONES[cfg.zone].pulse = 1;
+      soundSys.playChime(380 + cfg.zone * 40);
+      refreshCfg();
+    }
   }
 });
 
